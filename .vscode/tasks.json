@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "start",
+			"group": "build",
+			"label": "npm: start",
+			"detail": "Start the React app",
+			"presentation": {
+				"reveal": "silent"
+			}
+		}
+	]
+}
