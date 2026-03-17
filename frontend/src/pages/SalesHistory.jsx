@@ -12,9 +12,11 @@ import {
     formatPizzaQuantity,
     formatSaleItemLabel,
     formatStockValue,
+    getOrderAlertLabel,
     getStatusBadgeClass,
     getStockBadgeClass,
     getStockLabel,
+    printKitchenTicket,
 } from '../utils/sales';
 
 const SalesHistory = () => {
@@ -234,6 +236,9 @@ const SalesHistory = () => {
                                             <div>
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
                                                 <p className="text-sm text-muted">{order.date} - {order.payment_method}</p>
+                                                <p className="mt-1 text-xs uppercase tracking-wide text-muted">
+                                                    Aviso: {getOrderAlertLabel(order)}
+                                                </p>
                                                 {order.notify_whatsapp ? (
                                                     <div className="mt-1 space-y-1">
                                                         <p className="text-xs uppercase tracking-wide text-muted">
@@ -267,6 +272,13 @@ const SalesHistory = () => {
                                                 ) : null}
                                             </div>
                                             <div className="flex flex-col gap-2 sm:items-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => printKitchenTicket(order)}
+                                                    className="rounded-2xl border border-primary/15 bg-white px-4 py-2 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
+                                                >
+                                                    Imprimir comanda
+                                                </button>
                                                 {order.receiver_phone ? (
                                                     <button
                                                         type="button"

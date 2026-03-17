@@ -118,6 +118,8 @@ def build_order_from_payload(payload: OrderCreate) -> Order:
         include_shipping=payload.include_shipping,
         shipping_cost=shipping_cost,
         notify_whatsapp=payload.notify_whatsapp,
+        use_vipper=payload.use_vipper,
+        vipper_code=payload.vipper_code.strip(),
         sales=payload.sales,
         subtotal=subtotal,
         total=subtotal + shipping_cost,
@@ -174,6 +176,8 @@ def build_legacy_order(raw_day: dict) -> Order:
         include_shipping=False,
         shipping_cost=max(total - subtotal, 0),
         notify_whatsapp=False,
+        use_vipper=False,
+        vipper_code='',
         sales=items,
         subtotal=subtotal,
         total=total,
@@ -290,8 +294,14 @@ async def registrar_venta(
     venta: OrderCreate,
     _: SessionUser = Depends(require_role('admin', 'operator')),
 ):
+    if venta.notify_whatsapp and venta.use_vipper:
+        raise HTTPException(status_code=400, detail='Elige WhatsApp o vipper, no ambos a la vez.')
+
     if venta.notify_whatsapp and not venta.receiver_phone.strip():
         raise HTTPException(status_code=400, detail='Ingresa un telefono para poder avisar por WhatsApp.')
+
+    if venta.use_vipper and not venta.vipper_code.strip():
+        raise HTTPException(status_code=400, detail='Ingresa el numero o codigo del vipper para este pedido.')
 
     pizzas = load_pizzas()
     updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)

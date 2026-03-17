@@ -51,7 +51,9 @@ const AppProvider = ({ children }) => {
             notes: '',
             includeShipping: false,
             shippingCost: 1500,
+            alertChannel: 'none',
             notifyWhatsApp: false,
+            vipperCode: '',
         },
     });
     const storeRef = useRef(store);

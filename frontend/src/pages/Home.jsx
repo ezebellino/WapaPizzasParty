@@ -15,15 +15,23 @@ import {
     formatPizzaQuantity,
     formatSaleItemLabel,
     formatStockValue,
+    getOrderAlertLabel,
     getStatusBadgeClass,
     getStockBadgeClass,
     getStockLabel,
+    printKitchenTicket,
 } from '../utils/sales';
 
 const paymentOptions = [
     { value: 'efectivo', label: 'Efectivo' },
     { value: 'transferencia', label: 'Transferencia' },
     { value: 'mercado_pago', label: 'Mercado Pago' },
+];
+
+const alertOptions = [
+    { value: 'none', label: 'Sin aviso' },
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'vipper', label: 'Vipper' },
 ];
 
 const Home = () => {
@@ -106,7 +114,7 @@ const Home = () => {
                                 </div>
                             </div>
                             <p className="mt-2 max-w-2xl text-sm text-muted">
-                                Carga medias pizzas, arma combinaciones mitad y mitad, calcula el total automaticamente y controla pedidos y stock en una sola vista.
+                                Carga pedidos rapido, calcula el total automaticamente, deja lista la comanda y define si el aviso se hace por WhatsApp o vipper.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-secondary">
@@ -265,15 +273,33 @@ const Home = () => {
                                 onChange={(event) => actions.setOrderField('receiverPhone', event.target.value)}
                                 className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
                             />
-                            <label className="flex items-center justify-between rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm text-text">
-                                <span className="font-medium">Avisar por WhatsApp segun el estado del pedido</span>
+                            <select
+                                value={store.orderForm.alertChannel}
+                                onChange={(event) => actions.setOrderField('alertChannel', event.target.value)}
+                                className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
+                            >
+                                {alertOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {store.orderForm.alertChannel === 'whatsapp' ? (
+                                <p className="rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm text-muted">
+                                    El sistema abrira un WhatsApp con el comprobante prearmado al numero cargado.
+                                </p>
+                            ) : null}
+
+                            {store.orderForm.alertChannel === 'vipper' ? (
                                 <input
-                                    type="checkbox"
-                                    checked={store.orderForm.notifyWhatsApp}
-                                    onChange={(event) => actions.setOrderField('notifyWhatsApp', event.target.checked)}
-                                    className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary"
+                                    type="text"
+                                    placeholder="Numero o codigo de vipper"
+                                    value={store.orderForm.vipperCode}
+                                    onChange={(event) => actions.setOrderField('vipperCode', event.target.value)}
+                                    className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
                                 />
-                            </label>
+                            ) : null}
                             <select
                                 value={store.orderForm.paymentMethod}
                                 onChange={(event) => actions.setOrderField('paymentMethod', event.target.value)}
@@ -392,19 +418,33 @@ const Home = () => {
 
                         {store.lastCreatedOrder ? (
                             <div className="mt-4 rounded-2xl border border-success/20 bg-success/10 p-4 text-sm text-success">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <span>
-                                        Ultimo pedido guardado: {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
-                                    </span>
-                                    {store.lastCreatedOrder.receiver_phone ? (
+                                <div className="space-y-3">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <span>
+                                            Ultimo pedido guardado: {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
+                                        </span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-success">
+                                            {getOrderAlertLabel(store.lastCreatedOrder)}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => actions.openOrderWhatsApp(today, store.lastCreatedOrder.order_id)}
+                                            onClick={() => printKitchenTicket(store.lastCreatedOrder)}
                                             className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
                                         >
-                                            Enviar WhatsApp
+                                            Imprimir comanda
                                         </button>
-                                    ) : null}
+                                        {store.lastCreatedOrder.receiver_phone && store.lastCreatedOrder.notify_whatsapp ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => actions.openOrderWhatsApp(today, store.lastCreatedOrder.order_id)}
+                                                className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
+                                            >
+                                                Enviar WhatsApp
+                                            </button>
+                                        ) : null}
+                                    </div>
                                 </div>
                             </div>
                         ) : null}

@@ -103,6 +103,8 @@ class OrderBase(BaseModel):
     include_shipping: bool = Field(default=False)
     shipping_cost: int = Field(default=0, ge=0)
     notify_whatsapp: bool = Field(default=False)
+    use_vipper: bool = Field(default=False)
+    vipper_code: str = Field(default='')
     sales: list[SaleItem] = Field(min_length=1)
 
     @field_validator('sales')
@@ -121,6 +123,11 @@ class OrderBase(BaseModel):
     @classmethod
     def normalize_notes(cls, notes: str) -> str:
         return notes.strip()
+
+    @field_validator('vipper_code')
+    @classmethod
+    def normalize_vipper_code(cls, vipper_code: str) -> str:
+        return vipper_code.strip()
 
 
 class OrderCreate(OrderBase):

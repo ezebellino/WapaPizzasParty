@@ -41,6 +41,18 @@ export const formatPizzaQuantity = (value) => {
 
 export const formatSaleItemLabel = (item) => `${formatPizzaQuantity(item.quantity)} de ${item.name}`;
 
+export const getOrderAlertLabel = (order) => {
+    if (order.use_vipper && order.vipper_code) {
+        return `Vipper ${order.vipper_code}`;
+    }
+
+    if (order.notify_whatsapp && order.receiver_phone) {
+        return `WhatsApp ${order.receiver_phone}`;
+    }
+
+    return 'Sin aviso';
+};
+
 export const calculateCartSubtotal = (cart) =>
     Math.round(cart.reduce((sum, item) => sum + item.price * item.quantity, 0));
 
@@ -207,6 +219,7 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
         'telefono',
         'medio_pago',
         'estado',
+        'aviso_cliente',
         'incluye_envio',
         'costo_envio',
         'subtotal',
@@ -223,6 +236,7 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
         order.receiver_phone,
         order.payment_method,
         order.status,
+        getOrderAlertLabel(order),
         order.include_shipping ? 'si' : 'no',
         order.shipping_cost,
         order.subtotal,
@@ -247,4 +261,60 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+};
+
+export const printKitchenTicket = (order) => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const openedWindow = window.open('', '_blank', 'width=480,height=720');
+    if (!openedWindow) {
+        return;
+    }
+
+    const createdAt = order.created_at
+        ? new Date(order.created_at).toLocaleString('es-AR')
+        : new Date().toLocaleString('es-AR');
+
+    const lines = order.sales
+        .map(
+            (item) => `
+                <li style="margin-bottom:10px;">
+                    <strong>${formatSaleItemLabel(item)}</strong><br />
+                    <span>${item.description || ''}</span>
+                </li>
+            `
+        )
+        .join('');
+
+    const alertLabel = getOrderAlertLabel(order);
+    const deliveryLabel = order.include_shipping ? `Envio - ${formatCurrency(order.shipping_cost)}` : 'Retira en mostrador';
+
+    openedWindow.document.write(`
+        <html>
+            <head>
+                <title>Comanda ${order.order_id}</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; padding: 24px; color: #111;">
+                <h1 style="margin:0 0 8px;">WapaPizzaParty</h1>
+                <p style="margin:0 0 16px;">Comanda de cocina</p>
+                <p style="margin:0 0 6px;"><strong>Pedido:</strong> ${order.order_id}</p>
+                <p style="margin:0 0 6px;"><strong>Hora:</strong> ${createdAt}</p>
+                <p style="margin:0 0 6px;"><strong>Cliente:</strong> ${order.receiver_name}</p>
+                <p style="margin:0 0 6px;"><strong>Aviso:</strong> ${alertLabel}</p>
+                <p style="margin:0 0 16px;"><strong>Entrega:</strong> ${deliveryLabel}</p>
+                <hr />
+                <h2 style="margin:16px 0 12px;">Preparar</h2>
+                <ul style="padding-left:20px;">${lines}</ul>
+                <hr />
+                <p style="margin:16px 0 6px;"><strong>Observaciones:</strong></p>
+                <p style="margin:0 0 16px;">${order.notes || 'Sin observaciones.'}</p>
+                <p style="margin:0;"><strong>Total:</strong> ${formatCurrency(order.total)}</p>
+            </body>
+        </html>
+    `);
+    openedWindow.document.close();
+    openedWindow.focus();
+    openedWindow.print();
 };

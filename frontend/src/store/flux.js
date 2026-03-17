@@ -18,7 +18,9 @@ const resetOrderForm = () => ({
     notes: '',
     includeShipping: false,
     shippingCost: 1500,
+    alertChannel: 'none',
     notifyWhatsApp: false,
+    vipperCode: '',
 });
 
 const normalizeHalfStep = (value) => Math.round((Number(value) || 0) * 2) / 2;
@@ -172,7 +174,13 @@ const getFlux = (setStore, getStore, storageKey) => ({
             ...prevStore,
             orderForm: {
                 ...prevStore.orderForm,
-                [field]: value,
+                ...(field === 'alertChannel'
+                    ? {
+                        alertChannel: value,
+                        notifyWhatsApp: value === 'whatsapp',
+                        ...(value !== 'vipper' ? { vipperCode: '' } : {}),
+                      }
+                    : { [field]: value }),
             },
         }));
     },
@@ -382,7 +390,9 @@ const getFlux = (setStore, getStore, storageKey) => ({
                 notes: orderForm.notes,
                 include_shipping: orderForm.includeShipping,
                 shipping_cost: Number(orderForm.shippingCost) || 0,
-                notify_whatsapp: orderForm.notifyWhatsApp,
+                notify_whatsapp: orderForm.alertChannel === 'whatsapp',
+                use_vipper: orderForm.alertChannel === 'vipper',
+                vipper_code: orderForm.vipperCode,
                 sales: cart,
             });
 
