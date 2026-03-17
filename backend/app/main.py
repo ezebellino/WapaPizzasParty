@@ -2,10 +2,13 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from .auth import create_access_token, decode_access_token, verify_password
 from .schemas import (
+    AuthSession,
+    LoginRequest,
     Order,
     OrderCreate,
     OrderStatusUpdate,
@@ -13,6 +16,8 @@ from .schemas import (
     PizzaInventoryUpdate,
     SaleItem,
     SalesDay,
+    SessionUser,
+    User,
 )
 
 app = FastAPI()
@@ -20,6 +25,7 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 PIZZAS_FILE = BASE_DIR / 'pizzas.json'
 VENTAS_FILE = BASE_DIR / 'ventas.json'
+USERS_FILE = BASE_DIR / 'users.json'
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +54,51 @@ def refresh_sales_day(day: SalesDay) -> SalesDay:
     day.total_pizzas = sum(calculate_total_pizzas(order.sales) for order in day.orders)
     day.order_count = len(day.orders)
     return day
+
+
+def load_users() -> list[User]:
+    try:
+        with USERS_FILE.open('r', encoding='utf-8') as file:
+            raw_users = json.load(file)
+            return [User.model_validate(item) for item in raw_users]
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def find_user_by_username(username: str) -> User | None:
+    normalized_username = username.strip().lower()
+    return next((user for user in load_users() if user.username.lower() == normalized_username), None)
+
+
+def get_current_user(authorization: str = Header(default='')) -> SessionUser:
+    if not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Token de acceso requerido.')
+
+    token = authorization.replace('Bearer ', '', 1).strip()
+    try:
+        payload = decode_access_token(token)
+    except ValueError as error:
+        raise HTTPException(status_code=401, detail=str(error)) from error
+
+    user = find_user_by_username(payload.get('username', ''))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail='Usuario no valido.')
+
+    return SessionUser(
+        id=user.id,
+        name=user.name,
+        username=user.username,
+        role=user.role,
+    )
+
+
+def require_role(*roles: str):
+    def dependency(current_user: SessionUser = Depends(get_current_user)) -> SessionUser:
+        if current_user.role not in roles:
+            raise HTTPException(status_code=403, detail='No tienes permisos para esta accion.')
+        return current_user
+
+    return dependency
 
 
 def build_order_from_payload(payload: OrderCreate) -> Order:
@@ -158,13 +209,37 @@ def reduce_stock_for_order(pizzas: list[Pizza], items: list[SaleItem]) -> list[P
     return updated_pizzas
 
 
+@app.post('/auth/login', response_model=AuthSession)
+async def login(payload: LoginRequest) -> AuthSession:
+    user = find_user_by_username(payload.username)
+    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail='Credenciales invalidas.')
+
+    session_user = SessionUser(
+        id=user.id,
+        name=user.name,
+        username=user.username,
+        role=user.role,
+    )
+    token = create_access_token(session_user.model_dump())
+    return AuthSession(access_token=token, user=session_user)
+
+
+@app.get('/auth/me', response_model=SessionUser)
+async def me(current_user: SessionUser = Depends(get_current_user)) -> SessionUser:
+    return current_user
+
+
 @app.get('/ventas/', response_model=list[SalesDay])
-async def obtener_ventas() -> list[SalesDay]:
+async def obtener_ventas(_: SessionUser = Depends(get_current_user)) -> list[SalesDay]:
     return cargar_ventas()
 
 
 @app.get('/ventas/{fecha}', response_model=SalesDay)
-async def obtener_ventas_por_fecha(fecha: str) -> SalesDay:
+async def obtener_ventas_por_fecha(
+    fecha: str,
+    _: SessionUser = Depends(get_current_user),
+) -> SalesDay:
     ventas = cargar_ventas()
     for venta in ventas:
         if venta.date == fecha:
@@ -173,7 +248,10 @@ async def obtener_ventas_por_fecha(fecha: str) -> SalesDay:
 
 
 @app.post('/ventas/')
-async def registrar_venta(venta: OrderCreate):
+async def registrar_venta(
+    venta: OrderCreate,
+    _: SessionUser = Depends(require_role('admin', 'operator')),
+):
     pizzas = load_pizzas()
     updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)
     ventas = cargar_ventas()
@@ -202,7 +280,12 @@ async def registrar_venta(venta: OrderCreate):
 
 
 @app.patch('/ventas/{fecha}/{order_id}/status')
-async def actualizar_estado_pedido(fecha: str, order_id: str, payload: OrderStatusUpdate):
+async def actualizar_estado_pedido(
+    fecha: str,
+    order_id: str,
+    payload: OrderStatusUpdate,
+    _: SessionUser = Depends(require_role('admin')),
+):
     ventas = cargar_ventas()
 
     for dia in ventas:
@@ -226,12 +309,16 @@ async def actualizar_estado_pedido(fecha: str, order_id: str, payload: OrderStat
 
 
 @app.get('/pizzas', response_model=list[Pizza])
-async def get_pizzas() -> list[Pizza]:
+async def get_pizzas(_: SessionUser = Depends(get_current_user)) -> list[Pizza]:
     return load_pizzas()
 
 
 @app.patch('/pizzas/{pizza_id}', response_model=Pizza)
-async def actualizar_inventario_pizza(pizza_id: int, payload: PizzaInventoryUpdate) -> Pizza:
+async def actualizar_inventario_pizza(
+    pizza_id: int,
+    payload: PizzaInventoryUpdate,
+    _: SessionUser = Depends(require_role('admin')),
+) -> Pizza:
     pizzas = load_pizzas()
 
     for index, pizza in enumerate(pizzas):

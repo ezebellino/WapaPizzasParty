@@ -2,6 +2,42 @@ from pydantic import BaseModel, Field, field_validator
 
 
 ORDER_STATUSES = {'pendiente', 'en_preparacion', 'entregado', 'cancelado'}
+USER_ROLES = {'admin', 'operator'}
+
+
+class User(BaseModel):
+    id: int
+    name: str = Field(min_length=1)
+    username: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    is_active: bool = Field(default=True)
+    password_hash: str = Field(min_length=1)
+
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, role: str) -> str:
+        normalized_role = role.strip().lower()
+        if normalized_role not in USER_ROLES:
+            raise ValueError('Rol invalido.')
+        return normalized_role
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
+class SessionUser(BaseModel):
+    id: int
+    name: str
+    username: str
+    role: str
+
+
+class AuthSession(BaseModel):
+    access_token: str
+    token_type: str = 'bearer'
+    user: SessionUser
 
 
 class Pizza(BaseModel):

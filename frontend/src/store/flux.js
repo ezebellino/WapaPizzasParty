@@ -1,5 +1,14 @@
+import { meRequest, loginRequest } from '../api/auth';
 import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
 import { createSale, fetchSales, updateOrderStatus } from '../api/sales';
+
+const emptySession = {
+    isAuthenticated: false,
+    role: null,
+    name: '',
+    username: '',
+    accessToken: '',
+};
 
 const resetOrderForm = () => ({
     receiverName: '',
@@ -25,7 +34,82 @@ const syncCartWithPizzas = (cart, pizzas) =>
         })
         .filter(Boolean);
 
-const getFlux = (setStore) => ({
+const persistSession = (storageKey, session) => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.localStorage.setItem(storageKey, JSON.stringify(session));
+};
+
+const clearSessionStorage = (storageKey) => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.localStorage.removeItem(storageKey);
+};
+
+const getFlux = (setStore, storageKey) => ({
+    login: async ({ username, password }) => {
+        try {
+            const response = await loginRequest({ username, password });
+            const session = {
+                isAuthenticated: true,
+                role: response.user.role,
+                name: response.user.name,
+                username: response.user.username,
+                accessToken: response.access_token,
+            };
+
+            persistSession(storageKey, session);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                session,
+            }));
+            return true;
+        } catch (error) {
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: 'Credenciales invalidas.',
+            }));
+            return false;
+        }
+    },
+
+    hydrateSession: async () => {
+        try {
+            const user = await meRequest();
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                session: {
+                    ...prevStore.session,
+                    isAuthenticated: true,
+                    role: user.role,
+                    name: user.name,
+                    username: user.username,
+                },
+            }));
+        } catch {
+            clearSessionStorage(storageKey);
+            setStore((prevStore) => ({
+                ...prevStore,
+                session: emptySession,
+            }));
+        }
+    },
+
+    logout: () => {
+        clearSessionStorage(storageKey);
+        setStore((prevStore) => ({
+            ...prevStore,
+            session: emptySession,
+            appError: null,
+        }));
+    },
+
     loadSales: async () => {
         setStore((prevStore) => ({
             ...prevStore,
@@ -182,6 +266,10 @@ const getFlux = (setStore) => ({
     },
 
     updatePizzaInventory: async (pizzaId, payload) => {
+        if (typeof payload !== 'object') {
+            return;
+        }
+
         try {
             const updatedPizza = await updatePizzaInventory(pizzaId, payload);
             setStore((prevStore) => {
@@ -242,7 +330,11 @@ const getFlux = (setStore) => ({
         });
 
         try {
-            const { cart, orderForm } = snapshot;
+            const { cart, orderForm, session } = snapshot;
+
+            if (!session.isAuthenticated) {
+                throw new Error('Inicia sesion para registrar pedidos.');
+            }
 
             if (cart.length === 0) {
                 throw new Error('Agrega al menos una pizza al pedido.');
