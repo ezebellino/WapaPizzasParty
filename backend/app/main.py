@@ -1,20 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-from . import crud, models, schemas
-from .database import engine, Base, SessionLocal
+import json
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
+BASE_DIR = Path(__file__).resolve().parent
+PIZZAS_FILE = BASE_DIR / "pizzas.json"
+VENTAS_FILE = BASE_DIR / "ventas.json"
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -23,37 +19,69 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# crear un producto
-@app.post("/products/", response_model=schemas.Product)
-def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
-    return crud.create_product(db=db, product=product)
 
-# obtener todos los productos
-@app.get("/products/", response_model=list[schemas.Product])
-def read_products(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return crud.get_products(db=db, skip=skip, limit=limit)
+@app.get("/")
+async def root():
+    return {"message": "API de ventas de pizzeria"}
 
-# producto por id
-@app.get("/products/{product_id}", response_model=schemas.Product)
-def read_product(product_id: int, db: Session = Depends(get_db)):
-    product = crud.get_product(db=db, product_id=product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return product
 
-# actualizar producto
-@app.put("/products/{product_id}", response_model=schemas.Product)
-def update_product(product_id: int, product: schemas.ProductCreate, db: Session = Depends(get_db)):
-   updated_product = crud.update_product(db=db, product_id=product_id, product=product)
-   if updated_product is None:
-       raise HTTPException(status_code=404, detail="Product not found")
-   return updated_product
+def cargar_ventas():
+    try:
+        with VENTAS_FILE.open("r", encoding="utf-8") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
-# eliminar producto
-@app.delete("/products/{product_id}", response_model=dict)
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = crud.get_product(db, product_id=product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    crud.delete_product(db, product_id=product_id)
-    return {"message": "Product deleted successfully"}
+
+def guardar_ventas(data):
+    with VENTAS_FILE.open("w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+
+
+@app.get("/ventas/")
+async def obtener_ventas():
+    return cargar_ventas()
+
+
+@app.get("/ventas/{fecha}")
+async def obtener_ventas_por_fecha(fecha: str):
+    ventas = cargar_ventas()
+    for venta in ventas:
+        if venta["date"] == fecha:
+            return venta
+    raise HTTPException(status_code=404, detail="No hay ventas registradas para esta fecha.")
+
+
+@app.post("/ventas/")
+async def registrar_venta(venta: dict):
+    ventas = cargar_ventas()
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+
+    for dia in ventas:
+        if dia["date"] == fecha_actual:
+            dia["sales"].extend(venta["sales"])
+            dia["total_revenue"] += venta["total_revenue"]
+            guardar_ventas(ventas)
+            return {"message": "Venta anadida al dia existente."}
+
+    nueva_venta = {
+        "date": fecha_actual,
+        "sales": venta["sales"],
+        "total_revenue": venta["total_revenue"],
+    }
+    ventas.append(nueva_venta)
+    guardar_ventas(ventas)
+    return {"message": "Nueva venta registrada."}
+
+
+def load_pizzas():
+    try:
+        with PIZZAS_FILE.open("r", encoding="utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+
+@app.get("/pizzas")
+async def get_pizzas():
+    return load_pizzas()
