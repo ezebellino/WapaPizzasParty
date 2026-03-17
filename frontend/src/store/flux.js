@@ -22,6 +22,10 @@ const resetOrderForm = () => ({
 });
 
 const normalizeHalfStep = (value) => Math.round((Number(value) || 0) * 2) / 2;
+const normalizeCartIncrement = (value) => {
+    const normalized = normalizeHalfStep(value);
+    return normalized >= HALF_PIZZA_STEP ? normalized : HALF_PIZZA_STEP;
+};
 
 const syncCartWithPizzas = (cart, pizzas) =>
     cart
@@ -54,7 +58,7 @@ const clearSessionStorage = (storageKey) => {
     window.localStorage.removeItem(storageKey);
 };
 
-const getFlux = (setStore, storageKey) => ({
+const getFlux = (setStore, getStore, storageKey) => ({
     login: async ({ username, password }) => {
         try {
             const response = await loginRequest({ username, password });
@@ -183,7 +187,7 @@ const getFlux = (setStore, storageKey) => ({
         }));
     },
 
-    addToCart: (pizza) => {
+    addToCart: (pizza, quantity = HALF_PIZZA_STEP) => {
         if (!pizza.available || pizza.stock === 0) {
             setStore((prevStore) => ({
                 ...prevStore,
@@ -192,11 +196,13 @@ const getFlux = (setStore, storageKey) => ({
             return;
         }
 
+        const quantityToAdd = normalizeCartIncrement(quantity);
+
         setStore((prevStore) => {
             const existingItem = prevStore.cart.find((item) => item.id === pizza.id);
             const reservedQuantity = normalizeHalfStep(existingItem?.quantity ?? 0);
 
-            if (reservedQuantity + HALF_PIZZA_STEP > pizza.stock + 1e-9) {
+            if (reservedQuantity + quantityToAdd > pizza.stock + 1e-9) {
                 return {
                     ...prevStore,
                     appError: `No puedes agregar mas de ${pizza.stock} pizzas de ${pizza.name}.`,
@@ -208,7 +214,7 @@ const getFlux = (setStore, storageKey) => ({
                     ...prevStore,
                     appError: null,
                     cart: prevStore.cart.map((item) =>
-                        item.id === pizza.id ? { ...item, quantity: normalizeHalfStep(item.quantity + HALF_PIZZA_STEP) } : item
+                        item.id === pizza.id ? { ...item, quantity: normalizeHalfStep(item.quantity + quantityToAdd) } : item
                     ),
                 };
             }
@@ -216,7 +222,7 @@ const getFlux = (setStore, storageKey) => ({
             return {
                 ...prevStore,
                 appError: null,
-                cart: [...prevStore.cart, { ...pizza, quantity: HALF_PIZZA_STEP }],
+                cart: [...prevStore.cart, { ...pizza, quantity: quantityToAdd }],
             };
         });
     },
@@ -324,16 +330,13 @@ const getFlux = (setStore, storageKey) => ({
     },
 
     confirmarVenta: async () => {
-        let snapshot;
-        setStore((prevStore) => {
-            snapshot = prevStore;
-            return {
-                ...prevStore,
-                submittingOrder: true,
-                appError: null,
-                lastCreatedOrder: null,
-            };
-        });
+        const snapshot = getStore();
+        setStore((prevStore) => ({
+            ...prevStore,
+            submittingOrder: true,
+            appError: null,
+            lastCreatedOrder: null,
+        }));
 
         try {
             const { cart, orderForm, session } = snapshot;

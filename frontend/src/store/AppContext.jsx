@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useEffect, useRef, useState } from 'react';
 import getFlux from './flux';
 
 const AUTH_STORAGE_KEY = 'wapapizzasparty-auth';
@@ -54,8 +54,13 @@ const AppProvider = ({ children }) => {
             notifyWhatsApp: false,
         },
     });
+    const storeRef = useRef(store);
 
-    const [actions] = useState(getFlux(setStore, AUTH_STORAGE_KEY));
+    useEffect(() => {
+        storeRef.current = store;
+    }, [store]);
+
+    const [actions] = useState(getFlux(setStore, () => storeRef.current, AUTH_STORAGE_KEY));
 
     return (
         <AppContext.Provider value={{ store, actions }}>

@@ -168,7 +168,7 @@ const Home = () => {
                                             </div>
                                             <p className="mt-2 text-sm leading-6 text-muted">{pizza.description}</p>
                                             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">
-                                                Se agrega de a 1/2 pizza. Puedes combinar sabores en un mismo pedido.
+                                                Puedes sumar 1/2 pizza o 1 pizza completa y combinar sabores en un mismo pedido.
                                             </p>
                                         </div>
                                         <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
@@ -177,14 +177,24 @@ const Home = () => {
                                     </div>
 
                                     <div className="mt-5 grid gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => actions.addToCart(pizza)}
-                                            disabled={!pizza.available || pizza.stock === 0}
-                                            className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary disabled:cursor-not-allowed disabled:bg-muted/40"
-                                        >
-                                            {pizza.available && pizza.stock > 0 ? 'Agregar 1/2 pizza' : 'Sin stock'}
-                                        </button>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => actions.addToCart(pizza, 0.5)}
+                                                disabled={!pizza.available || pizza.stock < 0.5}
+                                                className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary disabled:cursor-not-allowed disabled:bg-muted/40"
+                                            >
+                                                {pizza.available && pizza.stock >= 0.5 ? 'Agregar 1/2 pizza' : 'Sin stock'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => actions.addToCart(pizza, 1)}
+                                                disabled={!pizza.available || pizza.stock < 1}
+                                                className="inline-flex items-center justify-center rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:border-primary/10 disabled:bg-background/60 disabled:text-muted"
+                                            >
+                                                {pizza.available && pizza.stock >= 1 ? 'Agregar 1 pizza' : 'Sin stock completo'}
+                                            </button>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 type="button"
