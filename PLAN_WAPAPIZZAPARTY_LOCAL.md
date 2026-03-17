@@ -58,7 +58,8 @@ Estado actual:
 - Ya se reordeno el mostrador para priorizar la toma de pedido, los pedidos activos y la columna operativa.
 - Ya se quitaron controles manuales de stock innecesarios en la UI: el descuento se hace automatico al registrar la venta.
 - Ya existe acceso rapido de puesto local para una sola PC, configurable desde backend.
-- El siguiente paso fuerte es evaluar si el login manual sigue siendo necesario para la operacion diaria.
+- Ya puede ocultarse el login manual para simplificar la operacion diaria del puesto.
+- El siguiente paso fuerte es probar el circuito real completo en la PC del negocio.
 
 ### Etapa 3 - Comanda para cocina
 
@@ -124,6 +125,7 @@ Estado actual:
 - Ya existe script de arranque local para Windows.
 - Ya existe favicon e icono base del producto para navegador y acceso directo.
 - Ya existe script para crear acceso directo en el escritorio.
+- Ya existe logging local en archivo para revisar errores y warnings del puesto.
 - El siguiente paso es definir si hace falta instalador o si el launcher local alcanza para la operacion.
 
 ## Orden recomendado de implementacion

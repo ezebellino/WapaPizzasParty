@@ -11,4 +11,6 @@ export const localAccessRequest = () =>
         method: 'POST',
     });
 
+export const diagnosticsConfigRequest = () => apiRequest('/diagnostics/config');
+
 export const meRequest = () => apiRequest('/auth/me');

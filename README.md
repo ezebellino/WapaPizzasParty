@@ -77,6 +77,7 @@ Configuracion recomendada:
 WAPA_AUTH_SECRET=una-clave-segura
 WAPA_LOCAL_ACCESS_ENABLED=true
 WAPA_LOCAL_ACCESS_USERNAME=admin
+WAPA_SHOW_MANUAL_LOGIN=false
 WHATSAPP_MODE=mock
 WHATSAPP_PROVIDER=mock
 ```
@@ -98,6 +99,7 @@ WAPA_FACEBOOK=https://www.facebook.com/SoleMoranWapaPizzaParty
 En modo `mock`, la aplicacion prepara y registra el mensaje sin enviarlo.
 En modo `live`, el backend intenta enviarlo por la API oficial de Twilio.
 Con `WAPA_LOCAL_ACCESS_ENABLED=true`, la pantalla de login muestra un boton de acceso rapido para la PC interna del negocio.
+Con `WAPA_SHOW_MANUAL_LOGIN=false`, se oculta el formulario manual para simplificar el uso diario del puesto.
 
 ### Inicio rapido en Windows
 
@@ -159,6 +161,21 @@ O bien:
 ```
 
 Eso genera `WapaPizzaParty.lnk` en el escritorio, apuntando al lanzador local de la aplicacion.
+
+## Logs locales del puesto
+
+El backend escribe logs rotativos en:
+
+```text
+backend/app/logs/wapapizzaparty.log
+```
+
+Ahi quedan registrados:
+
+- errores y warnings del backend,
+- accesos al puesto,
+- pedidos registrados y cambios de estado,
+- y tambien errores o warnings relevantes del frontend.
 
 ## Flujo actual de datos
 

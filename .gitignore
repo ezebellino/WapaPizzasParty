@@ -19,5 +19,6 @@ Thumbs.db
 # Runtime data
 backend/app/ventas.json
 backend/app/users.json
+backend/app/logs/
 backend/.env
 .env

@@ -1,15 +1,27 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import logoImage from '../assets/WapaPizzaParty.jpeg';
+import { diagnosticsConfigRequest } from '../api/auth';
 import { AppContext } from '../store/AppContext';
 
 const Login = () => {
     const navigate = useNavigate();
     const { store, actions } = useContext(AppContext);
+    const [showManualLogin, setShowManualLogin] = useState(false);
     const [form, setForm] = useState({
         username: '',
         password: '',
     });
+
+    useEffect(() => {
+        diagnosticsConfigRequest()
+            .then((config) => {
+                setShowManualLogin(Boolean(config.show_manual_login));
+            })
+            .catch(() => {
+                setShowManualLogin(false);
+            });
+    }, []);
 
     if (store.session.isAuthenticated) {
         return <Navigate to="/" replace />;
@@ -44,7 +56,7 @@ const Login = () => {
                 </div>
             </div>
             <p className="mt-2 text-sm text-muted">
-                Usa las credenciales del puesto para abrir el mostrador y la caja del negocio.
+                Esta pantalla esta pensada para una sola PC del negocio, con acceso rapido directo al puesto.
             </p>
 
             <div className="mt-6 rounded-3xl border border-primary/10 bg-background/70 p-5">
@@ -61,36 +73,42 @@ const Login = () => {
                 </button>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Ingreso manual</p>
-                <input
-                    type="text"
-                    placeholder="Usuario"
-                    value={form.username}
-                    onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
-                    className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
-                />
-                <input
-                    type="password"
-                    placeholder="Contrasena"
-                    value={form.password}
-                    onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                    className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
-                />
+            {showManualLogin ? (
+                <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Ingreso manual</p>
+                    <input
+                        type="text"
+                        placeholder="Usuario"
+                        value={form.username}
+                        onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
+                        className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
+                    />
+                    <input
+                        type="password"
+                        placeholder="Contrasena"
+                        value={form.password}
+                        onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                        className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
+                    />
 
-                {store.appError ? (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                        {store.appError}
-                    </div>
-                ) : null}
+                    <button
+                        type="submit"
+                        className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
+                    >
+                        Ingresar manualmente
+                    </button>
+                </form>
+            ) : (
+                <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                    El ingreso manual esta oculto para simplificar la operacion del puesto.
+                </p>
+            )}
 
-                <button
-                    type="submit"
-                    className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
-                >
-                    Ingresar
-                </button>
-            </form>
+            {store.appError ? (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {store.appError}
+                </div>
+            ) : null}
         </div>
     );
 };

@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from time import perf_counter
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +15,7 @@ from .auth import create_access_token, decode_access_token, verify_password
 from .notifications import build_whatsapp_deep_link, build_whatsapp_message, dispatch_whatsapp_notification, should_notify_status
 from .schemas import (
     AuthSession,
+    ClientLogEntry,
     LoginRequest,
     Order,
     OrderCreate,
@@ -31,10 +35,23 @@ PROJECT_DIR = BASE_DIR.parent.parent
 PIZZAS_FILE = BASE_DIR / 'pizzas.json'
 VENTAS_FILE = BASE_DIR / 'ventas.json'
 USERS_FILE = BASE_DIR / 'users.json'
+LOGS_DIR = BASE_DIR / 'logs'
+LOG_FILE = LOGS_DIR / 'wapapizzaparty.log'
 FRONTEND_DIST_DIR = PROJECT_DIR / 'frontend' / 'dist'
 FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / 'index.html'
 LOCAL_ACCESS_ENABLED = os.getenv('WAPA_LOCAL_ACCESS_ENABLED', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
 LOCAL_ACCESS_USERNAME = os.getenv('WAPA_LOCAL_ACCESS_USERNAME', 'admin').strip()
+SHOW_MANUAL_LOGIN = os.getenv('WAPA_SHOW_MANUAL_LOGIN', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+LOGS_DIR.mkdir(exist_ok=True)
+
+logger = logging.getLogger('wapapizzaparty')
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5, encoding='utf-8')
+    file_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
+    logger.addHandler(file_handler)
+    logger.propagate = False
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,12 +65,53 @@ if (FRONTEND_DIST_DIR / 'assets').exists():
     app.mount('/assets', StaticFiles(directory=FRONTEND_DIST_DIR / 'assets'), name='frontend-assets')
 
 
+def write_log(level: str, message: str, **context) -> None:
+    context_items = [f'{key}={value}' for key, value in context.items() if value not in {None, ''}]
+    full_message = message if not context_items else f"{message} | {' | '.join(context_items)}"
+    getattr(logger, level.lower(), logger.info)(full_message)
+
+
+@app.middleware('http')
+async def log_requests(request: Request, call_next):
+    started_at = perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception as error:
+        duration_ms = round((perf_counter() - started_at) * 1000, 2)
+        write_log(
+            'error',
+            'Excepcion no controlada',
+            method=request.method,
+            path=request.url.path,
+            duration_ms=duration_ms,
+            error=repr(error),
+        )
+        raise
+
+    duration_ms = round((perf_counter() - started_at) * 1000, 2)
+    if response.status_code >= 500:
+        write_log('error', 'Respuesta con error de servidor', method=request.method, path=request.url.path, status=response.status_code, duration_ms=duration_ms)
+    elif response.status_code >= 400:
+        write_log('warning', 'Respuesta con warning', method=request.method, path=request.url.path, status=response.status_code, duration_ms=duration_ms)
+
+    return response
+
+
 @app.get('/')
 async def root():
     if FRONTEND_INDEX_FILE.exists():
         return FileResponse(FRONTEND_INDEX_FILE)
 
     return {'message': 'API de gestion de WapaPizzaParty'}
+
+
+@app.get('/diagnostics/config')
+async def diagnostics_config():
+    return {
+        'local_access_enabled': LOCAL_ACCESS_ENABLED,
+        'show_manual_login': SHOW_MANUAL_LOGIN,
+        'log_file': str(LOG_FILE),
+    }
 
 
 def calculate_subtotal(items: list[SaleItem]) -> int:
@@ -285,23 +343,29 @@ def reduce_stock_for_order(pizzas: list[Pizza], items: list[SaleItem]) -> list[P
 async def login(payload: LoginRequest) -> AuthSession:
     user = find_user_by_username(payload.username)
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+        write_log('warning', 'Intento fallido de login manual', username=payload.username.strip().lower())
         raise HTTPException(status_code=401, detail='Credenciales invalidas.')
 
+    write_log('info', 'Login manual exitoso', username=user.username)
     return build_session_for_user(user)
 
 
 @app.post('/auth/local-access', response_model=AuthSession)
 async def local_access_login(request: Request) -> AuthSession:
     if not LOCAL_ACCESS_ENABLED:
+        write_log('warning', 'Intento de acceso rapido deshabilitado', host=request.client.host if request.client else '')
         raise HTTPException(status_code=403, detail='El acceso rapido del puesto no esta habilitado.')
 
     if not is_local_request(request):
+        write_log('warning', 'Intento de acceso rapido remoto', host=request.client.host if request.client else '')
         raise HTTPException(status_code=403, detail='El acceso rapido solo puede usarse desde la PC local.')
 
     user = find_user_by_username(LOCAL_ACCESS_USERNAME)
     if not user or not user.is_active:
+        write_log('error', 'Usuario configurado para acceso rapido no disponible', username=LOCAL_ACCESS_USERNAME)
         raise HTTPException(status_code=404, detail='No encontramos el usuario configurado para acceso rapido.')
 
+    write_log('info', 'Acceso rapido local exitoso', username=user.username)
     return build_session_for_user(user)
 
 
@@ -353,6 +417,7 @@ async def registrar_venta(
             refresh_sales_day(dia)
             guardar_ventas(ventas)
             save_pizzas(updated_pizzas)
+            write_log('info', 'Pedido registrado', order_id=nueva_orden.order_id, receiver=nueva_orden.receiver_name, total=nueva_orden.total)
             return {
                 'message': 'Venta anadida al dia existente.',
                 'order': nueva_orden.model_dump(),
@@ -362,6 +427,7 @@ async def registrar_venta(
     ventas.append(nuevo_dia)
     guardar_ventas(ventas)
     save_pizzas(updated_pizzas)
+    write_log('info', 'Pedido registrado', order_id=nueva_orden.order_id, receiver=nueva_orden.receiver_name, total=nueva_orden.total)
     return {
         'message': 'Nueva venta registrada.',
         'order': nueva_orden.model_dump(),
@@ -392,6 +458,7 @@ async def actualizar_estado_pedido(
                 dia.orders[index] = updated_order
                 refresh_sales_day(dia)
                 guardar_ventas(ventas)
+                write_log('info', 'Estado de pedido actualizado', order_id=updated_order.order_id, status=updated_order.status)
                 return {
                     'message': 'Estado del pedido actualizado.',
                     'order': updated_order.model_dump(),
@@ -459,9 +526,17 @@ async def actualizar_inventario_pizza(
         updated_pizza = pizza.model_copy(update=updates)
         pizzas[index] = updated_pizza
         save_pizzas(pizzas)
+        write_log('info', 'Inventario de pizza actualizado', pizza_id=updated_pizza.id, pizza=updated_pizza.name, stock=updated_pizza.stock)
         return updated_pizza
 
     raise HTTPException(status_code=404, detail='No encontramos la pizza solicitada.')
+
+
+@app.post('/diagnostics/client-log', status_code=204)
+async def diagnostics_client_log(entry: ClientLogEntry, request: Request):
+    host = request.client.host if request.client else ''
+    write_log(entry.level, entry.message, source=entry.source, path=entry.path, details=entry.details, host=host)
+    return None
 
 
 @app.get('/{full_path:path}', include_in_schema=False)

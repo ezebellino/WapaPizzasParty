@@ -54,6 +54,22 @@ class AuthSession(BaseModel):
     user: SessionUser
 
 
+class ClientLogEntry(BaseModel):
+    level: str = Field(min_length=1, default='error')
+    message: str = Field(min_length=1)
+    source: str = Field(default='frontend')
+    path: str = Field(default='')
+    details: str = Field(default='')
+
+    @field_validator('level')
+    @classmethod
+    def validate_level(cls, level: str) -> str:
+        normalized_level = level.strip().lower()
+        if normalized_level not in {'info', 'warning', 'error'}:
+            raise ValueError('Nivel de log invalido.')
+        return normalized_level
+
+
 class Pizza(BaseModel):
     id: int
     name: str = Field(min_length=1)
