@@ -34,6 +34,7 @@ export const buildTreasuryStats = (salesDays) => {
     const totalRevenue = salesDays.reduce((sum, day) => sum + day.total_revenue, 0);
     const totalPizzas = salesDays.reduce((sum, day) => sum + day.total_pizzas, 0);
     const totalOrders = salesDays.reduce((sum, day) => sum + day.order_count, 0);
+    const bestDay = [...salesDays].sort((a, b) => b.total_revenue - a.total_revenue)[0] ?? null;
 
     return {
         totalRevenue,
@@ -41,6 +42,7 @@ export const buildTreasuryStats = (salesDays) => {
         totalOrders,
         averageTicket: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
         orders,
+        bestDay,
     };
 };
 
@@ -71,6 +73,46 @@ export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
         .filter((order) => order.status === 'pendiente' || order.status === 'en_preparacion')
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+export const buildPaymentBreakdown = (salesDays) => {
+    const breakdown = new Map();
+
+    flattenOrders(salesDays).forEach((order) => {
+        const current = breakdown.get(order.payment_method) ?? {
+            method: order.payment_method,
+            total: 0,
+            count: 0,
+        };
+
+        current.total += order.total;
+        current.count += 1;
+        breakdown.set(order.payment_method, current);
+    });
+
+    return [...breakdown.values()].sort((a, b) => b.total - a.total);
+};
+
+export const buildStatusBreakdown = (salesDays) => {
+    const breakdown = new Map(
+        ORDER_STATUS_OPTIONS.map((option) => [
+            option.value,
+            { status: option.value, label: option.label, count: 0 },
+        ])
+    );
+
+    flattenOrders(salesDays).forEach((order) => {
+        const current = breakdown.get(order.status) ?? {
+            status: order.status,
+            label: order.status,
+            count: 0,
+        };
+
+        current.count += 1;
+        breakdown.set(order.status, current);
+    });
+
+    return [...breakdown.values()].sort((a, b) => b.count - a.count);
+};
 
 export const getStatusBadgeClass = (status) => {
     switch (status) {

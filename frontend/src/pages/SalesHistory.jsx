@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { AppContext } from '../store/AppContext';
 import {
     ORDER_STATUS_OPTIONS,
+    buildPaymentBreakdown,
+    buildStatusBreakdown,
     buildStockAlerts,
     buildTopProducts,
     buildTreasuryStats,
@@ -31,6 +33,8 @@ const SalesHistory = () => {
     const stats = buildTreasuryStats(filteredDays);
     const topProducts = buildTopProducts(filteredDays).slice(0, 5);
     const stockAlerts = buildStockAlerts(store.pizzas).slice(0, 6);
+    const paymentBreakdown = buildPaymentBreakdown(filteredDays);
+    const statusBreakdown = buildStatusBreakdown(filteredDays);
     const recentOrders = [...stats.orders]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 8);
@@ -60,7 +64,7 @@ const SalesHistory = () => {
                     </div>
                 </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                     <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
                         <p className="text-sm text-muted">Ventas registradas</p>
                         <p className="mt-2 text-3xl font-semibold text-text">{stats.totalOrders}</p>
@@ -76,6 +80,13 @@ const SalesHistory = () => {
                     <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
                         <p className="text-sm text-muted">Ticket promedio</p>
                         <p className="mt-2 text-3xl font-semibold text-text">{formatCurrency(stats.averageTicket)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
+                        <p className="text-sm text-muted">Mejor dia</p>
+                        <p className="mt-2 text-lg font-semibold text-text">{stats.bestDay?.date ?? 'Sin datos'}</p>
+                        <p className="mt-1 text-sm text-muted">
+                            {stats.bestDay ? formatCurrency(stats.bestDay.total_revenue) : 'Aun sin ventas'}
+                        </p>
                     </div>
                 </div>
             </section>
@@ -124,6 +135,39 @@ const SalesHistory = () => {
                 </div>
 
                 <div className="space-y-6">
+                    <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <h3 className="text-2xl font-semibold text-text">Metodos de pago</h3>
+                        <div className="mt-5 space-y-3">
+                            {paymentBreakdown.length > 0 ? (
+                                paymentBreakdown.map((item) => (
+                                    <div key={item.method} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
+                                        <div>
+                                            <p className="font-semibold capitalize text-text">{item.method.replace('_', ' ')}</p>
+                                            <p className="text-sm text-muted">{item.count} pedidos</p>
+                                        </div>
+                                        <p className="font-semibold text-text">{formatCurrency(item.total)}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted">No hay pagos registrados para este filtro.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <h3 className="text-2xl font-semibold text-text">Estado de pedidos</h3>
+                        <div className="mt-5 space-y-3">
+                            {statusBreakdown.map((item) => (
+                                <div key={item.status} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>
+                                        {item.label}
+                                    </span>
+                                    <p className="text-lg font-semibold text-text">{item.count}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                         <h3 className="text-2xl font-semibold text-text">Alertas de stock</h3>
                         <div className="mt-5 space-y-3">
