@@ -23,6 +23,13 @@ const Login = () => {
         }
     };
 
+    const handleLocalAccess = async () => {
+        const success = await actions.localAccessLogin();
+        if (success) {
+            navigate('/');
+        }
+    };
+
     return (
         <div className="mx-auto max-w-md rounded-[28px] border border-primary/10 bg-white/90 p-8 shadow-modern">
             <div className="flex items-center gap-4">
@@ -40,7 +47,22 @@ const Login = () => {
                 Usa las credenciales del puesto para abrir el mostrador y la caja del negocio.
             </p>
 
+            <div className="mt-6 rounded-3xl border border-primary/10 bg-background/70 p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Puesto local</p>
+                <p className="mt-2 text-sm text-muted">
+                    Si esta es la PC interna del negocio, puedes entrar con acceso rapido sin escribir usuario y contrasena.
+                </p>
+                <button
+                    type="button"
+                    onClick={handleLocalAccess}
+                    className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
+                >
+                    Ingresar al puesto
+                </button>
+            </div>
+
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Ingreso manual</p>
                 <input
                     type="text"
                     placeholder="Usuario"

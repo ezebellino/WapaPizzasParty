@@ -1,4 +1,4 @@
-import { meRequest, loginRequest } from '../api/auth';
+import { localAccessRequest, meRequest, loginRequest } from '../api/auth';
 import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
 import { createSale, fetchOrderWhatsAppLink, fetchSales, updateOrderStatus } from '../api/sales';
 import { HALF_PIZZA_STEP } from '../utils/sales';
@@ -60,6 +60,14 @@ const clearSessionStorage = (storageKey) => {
     window.localStorage.removeItem(storageKey);
 };
 
+const buildSessionFromAuthResponse = (response) => ({
+    isAuthenticated: true,
+    role: response.user.role,
+    name: response.user.name,
+    username: response.user.username,
+    accessToken: response.access_token,
+});
+
 const mergeUpdatedOrderIntoSales = (sales, date, updatedOrder) =>
     sales.map((day) => ({
         ...day,
@@ -83,14 +91,7 @@ const getFlux = (setStore, getStore, storageKey) => ({
     login: async ({ username, password }) => {
         try {
             const response = await loginRequest({ username, password });
-            const session = {
-                isAuthenticated: true,
-                role: response.user.role,
-                name: response.user.name,
-                username: response.user.username,
-                accessToken: response.access_token,
-            };
-
+            const session = buildSessionFromAuthResponse(response);
             persistSession(storageKey, session);
             setStore((prevStore) => ({
                 ...prevStore,
@@ -102,6 +103,26 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: 'Credenciales invalidas.',
+            }));
+            return false;
+        }
+    },
+
+    localAccessLogin: async () => {
+        try {
+            const response = await localAccessRequest();
+            const session = buildSessionFromAuthResponse(response);
+            persistSession(storageKey, session);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                session,
+            }));
+            return true;
+        } catch (error) {
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos abrir el acceso rapido del puesto.',
             }));
             return false;
         }

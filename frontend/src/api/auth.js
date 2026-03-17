@@ -6,4 +6,9 @@ export const loginRequest = (payload) =>
         body: JSON.stringify(payload),
     });
 
+export const localAccessRequest = () =>
+    apiRequest('/auth/local-access', {
+        method: 'POST',
+    });
+
 export const meRequest = () => apiRequest('/auth/me');

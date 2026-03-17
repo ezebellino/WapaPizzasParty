@@ -1,9 +1,12 @@
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .auth import create_access_token, decode_access_token, verify_password
 from .notifications import build_whatsapp_deep_link, build_whatsapp_message, dispatch_whatsapp_notification, should_notify_status
@@ -24,9 +27,14 @@ from .schemas import (
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent.parent
 PIZZAS_FILE = BASE_DIR / 'pizzas.json'
 VENTAS_FILE = BASE_DIR / 'ventas.json'
 USERS_FILE = BASE_DIR / 'users.json'
+FRONTEND_DIST_DIR = PROJECT_DIR / 'frontend' / 'dist'
+FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / 'index.html'
+LOCAL_ACCESS_ENABLED = os.getenv('WAPA_LOCAL_ACCESS_ENABLED', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+LOCAL_ACCESS_USERNAME = os.getenv('WAPA_LOCAL_ACCESS_USERNAME', 'admin').strip()
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,9 +44,15 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
+if (FRONTEND_DIST_DIR / 'assets').exists():
+    app.mount('/assets', StaticFiles(directory=FRONTEND_DIST_DIR / 'assets'), name='frontend-assets')
+
 
 @app.get('/')
 async def root():
+    if FRONTEND_INDEX_FILE.exists():
+        return FileResponse(FRONTEND_INDEX_FILE)
+
     return {'message': 'API de gestion de WapaPizzaParty'}
 
 
@@ -69,6 +83,22 @@ def load_users() -> list[User]:
 def find_user_by_username(username: str) -> User | None:
     normalized_username = username.strip().lower()
     return next((user for user in load_users() if user.username.lower() == normalized_username), None)
+
+
+def build_session_for_user(user: User) -> AuthSession:
+    session_user = SessionUser(
+        id=user.id,
+        name=user.name,
+        username=user.username,
+        role=user.role,
+    )
+    token = create_access_token(session_user.model_dump())
+    return AuthSession(access_token=token, user=session_user)
+
+
+def is_local_request(request: Request) -> bool:
+    client_host = (request.client.host if request.client else '').strip().lower()
+    return client_host in {'127.0.0.1', '::1', 'localhost'}
 
 
 def get_current_user(authorization: str = Header(default='')) -> SessionUser:
@@ -257,14 +287,22 @@ async def login(payload: LoginRequest) -> AuthSession:
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail='Credenciales invalidas.')
 
-    session_user = SessionUser(
-        id=user.id,
-        name=user.name,
-        username=user.username,
-        role=user.role,
-    )
-    token = create_access_token(session_user.model_dump())
-    return AuthSession(access_token=token, user=session_user)
+    return build_session_for_user(user)
+
+
+@app.post('/auth/local-access', response_model=AuthSession)
+async def local_access_login(request: Request) -> AuthSession:
+    if not LOCAL_ACCESS_ENABLED:
+        raise HTTPException(status_code=403, detail='El acceso rapido del puesto no esta habilitado.')
+
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail='El acceso rapido solo puede usarse desde la PC local.')
+
+    user = find_user_by_username(LOCAL_ACCESS_USERNAME)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=404, detail='No encontramos el usuario configurado para acceso rapido.')
+
+    return build_session_for_user(user)
 
 
 @app.get('/auth/me', response_model=SessionUser)
@@ -424,3 +462,18 @@ async def actualizar_inventario_pizza(
         return updated_pizza
 
     raise HTTPException(status_code=404, detail='No encontramos la pizza solicitada.')
+
+
+@app.get('/{full_path:path}', include_in_schema=False)
+async def frontend_spa_fallback(full_path: str):
+    if not FRONTEND_INDEX_FILE.exists():
+        raise HTTPException(status_code=404, detail='Ruta no encontrada.')
+
+    if full_path.startswith(('auth', 'ventas', 'pizzas', 'docs', 'openapi.json', 'redoc')):
+        raise HTTPException(status_code=404, detail='Ruta no encontrada.')
+
+    asset_candidate = FRONTEND_DIST_DIR / full_path
+    if asset_candidate.exists() and asset_candidate.is_file():
+        return FileResponse(asset_candidate)
+
+    return FileResponse(FRONTEND_INDEX_FILE)

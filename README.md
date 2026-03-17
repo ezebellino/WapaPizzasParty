@@ -75,6 +75,8 @@ Configuracion recomendada:
 
 ```env
 WAPA_AUTH_SECRET=una-clave-segura
+WAPA_LOCAL_ACCESS_ENABLED=true
+WAPA_LOCAL_ACCESS_USERNAME=admin
 WHATSAPP_MODE=mock
 WHATSAPP_PROVIDER=mock
 ```
@@ -95,6 +97,7 @@ WAPA_FACEBOOK=https://www.facebook.com/SoleMoranWapaPizzaParty
 
 En modo `mock`, la aplicacion prepara y registra el mensaje sin enviarlo.
 En modo `live`, el backend intenta enviarlo por la API oficial de Twilio.
+Con `WAPA_LOCAL_ACCESS_ENABLED=true`, la pantalla de login muestra un boton de acceso rapido para la PC interna del negocio.
 
 ### Inicio rapido en Windows
 
@@ -113,6 +116,32 @@ Si solo queres ver los comandos sin abrir ventanas:
 
 ```powershell
 .\scripts\start-dev.ps1 -SameWindow
+```
+
+### Modo local para una sola PC
+
+Si quieres usar la aplicacion como puesto local y abrirla desde el navegador sin levantar Vite:
+
+```powershell
+.\scripts\start-local-app.ps1
+```
+
+O bien:
+
+```bat
+.\scripts\start-local-app.cmd
+```
+
+Ese flujo:
+
+- compila el frontend si todavia no existe `frontend/dist`,
+- levanta FastAPI en `http://127.0.0.1:8000`,
+- y abre la app lista para operar desde una sola PC.
+
+Si quieres forzar una recompilacion del frontend:
+
+```powershell
+.\scripts\start-local-app.ps1 -BuildFrontend
 ```
 
 ## Flujo actual de datos
