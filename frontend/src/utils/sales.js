@@ -287,40 +287,56 @@ export const printKitchenTicket = (order) => {
         ? new Date(order.created_at).toLocaleString('es-AR')
         : new Date().toLocaleString('es-AR');
 
-    const lines = order.sales
+    const alertLabel = getOrderAlertLabel(order);
+    const deliveryLabel = order.include_shipping ? `Envio - ${formatCurrency(order.shipping_cost)}` : 'Retira en mostrador';
+    const ticketItems = order.sales
         .map(
             (item) => `
-                <li style="margin-bottom:10px;">
-                    <strong>${formatSaleItemLabel(item)}</strong><br />
-                    <span>${item.description || ''}</span>
+                <li style="padding: 12px 0; border-bottom: 1px dashed #f3bfd8;">
+                    <div style="display:flex; justify-content:space-between; gap:16px;">
+                        <strong style="font-size:16px; color:#3e2330;">${formatSaleItemLabel(item)}</strong>
+                        <span style="font-size:14px; color:#eb0a7c; font-weight:700;">${formatCurrency(item.price * item.quantity)}</span>
+                    </div>
+                    <div style="margin-top:4px; font-size:13px; color:#8c6676;">${item.description || 'Sin detalle adicional.'}</div>
                 </li>
             `
         )
         .join('');
-
-    const alertLabel = getOrderAlertLabel(order);
-    const deliveryLabel = order.include_shipping ? `Envio - ${formatCurrency(order.shipping_cost)}` : 'Retira en mostrador';
+    const notes = order.notes || 'Sin observaciones.';
 
     openedWindow.document.write(`
         <html>
             <head>
                 <title>Comanda ${order.order_id}</title>
+                <meta charset="UTF-8" />
             </head>
-            <body style="font-family: Arial, sans-serif; padding: 24px; color: #111;">
-                <h1 style="margin:0 0 8px;">WapaPizzaParty</h1>
-                <p style="margin:0 0 16px;">Comanda de cocina</p>
-                <p style="margin:0 0 6px;"><strong>Pedido:</strong> ${order.order_id}</p>
-                <p style="margin:0 0 6px;"><strong>Hora:</strong> ${createdAt}</p>
-                <p style="margin:0 0 6px;"><strong>Cliente:</strong> ${order.receiver_name}</p>
-                <p style="margin:0 0 6px;"><strong>Aviso:</strong> ${alertLabel}</p>
-                <p style="margin:0 0 16px;"><strong>Entrega:</strong> ${deliveryLabel}</p>
-                <hr />
-                <h2 style="margin:16px 0 12px;">Preparar</h2>
-                <ul style="padding-left:20px;">${lines}</ul>
-                <hr />
-                <p style="margin:16px 0 6px;"><strong>Observaciones:</strong></p>
-                <p style="margin:0 0 16px;">${order.notes || 'Sin observaciones.'}</p>
-                <p style="margin:0;"><strong>Total:</strong> ${formatCurrency(order.total)}</p>
+            <body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 18px; color: #3e2330; background: #fffdfd;">
+                <div style="max-width: 360px; margin: 0 auto; border: 2px solid #ffd2e5; border-radius: 18px; overflow: hidden;">
+                    <div style="padding: 18px; background: linear-gradient(135deg, #eb0a7c, #b10861); color: white;">
+                        <p style="margin:0; font-size:11px; letter-spacing:0.28em; text-transform:uppercase; opacity:0.82;">Cocina</p>
+                        <h1 style="margin:8px 0 4px; font-size:28px; line-height:1;">WapaPizzaParty</h1>
+                        <p style="margin:0; font-size:14px; opacity:0.9;">Comanda de preparación</p>
+                    </div>
+                    <div style="padding: 18px;">
+                        <div style="display:grid; gap:8px; padding-bottom:16px; border-bottom: 1px dashed #f3bfd8;">
+                            <p style="margin:0;"><strong>Pedido:</strong> ${order.order_id}</p>
+                            <p style="margin:0;"><strong>Hora:</strong> ${createdAt}</p>
+                            <p style="margin:0;"><strong>Cliente:</strong> ${order.receiver_name}</p>
+                            <p style="margin:0;"><strong>Aviso:</strong> ${alertLabel}</p>
+                            <p style="margin:0;"><strong>Entrega:</strong> ${deliveryLabel}</p>
+                        </div>
+                        <h2 style="margin:18px 0 10px; font-size:18px;">Preparar ahora</h2>
+                        <ul style="list-style:none; padding:0; margin:0;">${ticketItems}</ul>
+                        <div style="margin-top:16px; padding:14px; border-radius:14px; background:#fff5f9; border:1px solid #ffd2e5;">
+                            <p style="margin:0 0 6px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#b10861;"><strong>Observaciones</strong></p>
+                            <p style="margin:0; font-size:14px;">${notes}</p>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:14px; border-top: 1px dashed #f3bfd8;">
+                            <span style="font-size:14px; color:#8c6676;">Total cliente</span>
+                            <strong style="font-size:22px; color:#eb0a7c;">${formatCurrency(order.total)}</strong>
+                        </div>
+                    </div>
+                </div>
             </body>
         </html>
     `);

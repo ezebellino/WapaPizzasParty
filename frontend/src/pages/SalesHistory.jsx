@@ -75,6 +75,32 @@ const SalesHistory = () => {
         });
     };
 
+    const handlePrintKitchenTicket = async (order) => {
+        let orderToPrint = order;
+
+        if (order.status === 'procesado') {
+            const result = await actions.startOrderPreparation(order.date, order.order_id);
+            if (!result.success) {
+                return;
+            }
+
+            orderToPrint = {
+                ...result.order,
+                date: order.date,
+            };
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Pedido enviado a cocina',
+                text: 'La comanda sale con el pedido ya marcado en preparacion.',
+                timer: 1600,
+                showConfirmButton: false,
+            });
+        }
+
+        printKitchenTicket(orderToPrint);
+    };
+
     return (
         <div className="space-y-8">
             <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
@@ -384,7 +410,7 @@ const SalesHistory = () => {
                                             <div className="flex flex-col gap-2 sm:items-end">
                                                 <button
                                                     type="button"
-                                                    onClick={() => printKitchenTicket(order)}
+                                                    onClick={() => handlePrintKitchenTicket(order)}
                                                     className="rounded-2xl border border-primary/15 bg-white px-4 py-2 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
                                                 >
                                                     Imprimir comanda

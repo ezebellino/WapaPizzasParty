@@ -68,6 +68,17 @@ const mergeUpdatedOrderIntoSales = (sales, date, updatedOrder) =>
             : day.orders,
     }));
 
+const syncLastCreatedOrder = (lastCreatedOrder, orderId, updatedOrder, date) => {
+    if (!lastCreatedOrder || lastCreatedOrder.order_id !== orderId) {
+        return lastCreatedOrder;
+    }
+
+    return {
+        ...updatedOrder,
+        date: updatedOrder.date ?? date,
+    };
+};
+
 const getFlux = (setStore, getStore, storageKey) => ({
     login: async ({ username, password }) => {
         try {
@@ -328,9 +339,7 @@ const getFlux = (setStore, getStore, storageKey) => ({
                 ...prevStore,
                 appError: null,
                 sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, response.order),
-                lastCreatedOrder: prevStore.lastCreatedOrder?.order_id === orderId
-                    ? response.order
-                    : prevStore.lastCreatedOrder,
+                lastCreatedOrder: syncLastCreatedOrder(prevStore.lastCreatedOrder, orderId, response.order, date),
             }));
             return { success: true, order: response.order };
         } catch (error) {
@@ -372,9 +381,7 @@ const getFlux = (setStore, getStore, storageKey) => ({
                 ...prevStore,
                 appError: null,
                 sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, statusResponse.order),
-                lastCreatedOrder: prevStore.lastCreatedOrder?.order_id === orderId
-                    ? statusResponse.order
-                    : prevStore.lastCreatedOrder,
+                lastCreatedOrder: syncLastCreatedOrder(prevStore.lastCreatedOrder, orderId, statusResponse.order, date),
             }));
 
             if (statusResponse.order.notify_whatsapp && statusResponse.order.receiver_phone) {
@@ -408,6 +415,30 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: error.message || 'No pudimos marcar el pedido como listo.',
+            }));
+            return { success: false };
+        }
+    },
+
+    startOrderPreparation: async (date, orderId) => {
+        try {
+            const statusResponse = await updateOrderStatus(date, orderId, 'en_preparacion');
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, statusResponse.order),
+                lastCreatedOrder: syncLastCreatedOrder(prevStore.lastCreatedOrder, orderId, statusResponse.order, date),
+            }));
+
+            return {
+                success: true,
+                order: statusResponse.order,
+            };
+        } catch (error) {
+            console.error('Error al iniciar la preparacion del pedido:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos enviar el pedido a cocina.',
             }));
             return { success: false };
         }
@@ -458,7 +489,11 @@ const getFlux = (setStore, getStore, storageKey) => ({
                 pizzas: refreshedPizzas,
                 cart: [],
                 submittingOrder: false,
-                lastCreatedOrder: response.order,
+                lastCreatedOrder: {
+                    ...response.order,
+                    date: refreshedSales.find((day) => day.orders.some((order) => order.order_id === response.order.order_id))?.date
+                        ?? new Date().toISOString().split('T')[0],
+                },
                 appError: null,
                 orderForm: resetOrderForm(),
             }));

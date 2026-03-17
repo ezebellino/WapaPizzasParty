@@ -69,17 +69,34 @@ const Home = () => {
         const result = await actions.confirmarVenta();
 
         if (result.success) {
+            const orderDate = result.order.date || today;
+            let orderToPrint = {
+                ...result.order,
+                date: orderDate,
+            };
+
+            const preparationResult = await actions.startOrderPreparation(orderDate, result.order.order_id);
+            if (preparationResult.success) {
+                orderToPrint = {
+                    ...preparationResult.order,
+                    date: orderDate,
+                };
+            }
+
+            printKitchenTicket(orderToPrint);
+
             Swal.fire({
                 icon: 'success',
                 title: 'Pedido guardado',
-                text: `${result.order.receiver_name} debe abonar ${formatCurrency(result.order.total)}. El stock se actualizo automaticamente.`,
+                text: `${result.order.receiver_name} debe abonar ${formatCurrency(result.order.total)}. La comanda ya se imprimio y el stock se actualizo automaticamente.`,
                 confirmButtonText: 'Seguir cargando',
             });
         }
     };
 
     const handleMarkReady = async (order) => {
-        const result = await actions.markOrderReady(order.date, order.order_id);
+        const orderDate = order.date || today;
+        const result = await actions.markOrderReady(orderDate, order.order_id);
         if (!result.success) {
             return;
         }
@@ -97,6 +114,33 @@ const Home = () => {
             text: notificationText,
             confirmButtonText: 'Continuar',
         });
+    };
+
+    const handlePrintKitchenTicket = async (order) => {
+        const orderDate = order.date || today;
+        let orderToPrint = order;
+
+        if (order.status === 'procesado') {
+            const result = await actions.startOrderPreparation(orderDate, order.order_id);
+            if (!result.success) {
+                return;
+            }
+
+            orderToPrint = {
+                ...result.order,
+                date: orderDate,
+            };
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Pedido enviado a cocina',
+                text: 'La comanda se imprimira con el pedido ya marcado en preparacion.',
+                timer: 1600,
+                showConfirmButton: false,
+            });
+        }
+
+        printKitchenTicket(orderToPrint);
     };
 
     const metricCards = [
@@ -430,7 +474,7 @@ const Home = () => {
                                     <div className="flex flex-wrap gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => printKitchenTicket(store.lastCreatedOrder)}
+                                            onClick={() => handlePrintKitchenTicket(store.lastCreatedOrder)}
                                             className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
                                         >
                                             Imprimir comanda
@@ -505,9 +549,9 @@ const Home = () => {
                                                     {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
                                                 </p>
                                             </div>
-                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
-                                                {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
-                                            </span>
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
+                                                    {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
+                                                </span>
                                         </div>
                                         {order.notify_whatsapp ? (
                                             <p className="mt-2 text-xs uppercase tracking-wide text-muted">

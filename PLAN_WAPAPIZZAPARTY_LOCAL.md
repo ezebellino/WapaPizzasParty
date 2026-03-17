@@ -67,6 +67,14 @@ Estado actual:
 - Permitir imprimir automaticamente o abrir vista de impresion.
 - Separar visualmente comprobante para cliente y comanda para cocina si hace falta.
 
+Estado actual:
+
+- En progreso firme.
+- Ya existe comanda imprimible desde mostrador y tesoreria.
+- La impresion ahora acompana mejor el flujo real de cocina.
+- La comanda ya se imprime automaticamente al registrar el pedido.
+- Queda pendiente ajustar detalles finales de formato y hardware de impresion si hiciera falta.
+
 ### Etapa 4 - Aviso al cliente
 
 - Mantener WhatsApp prearmado para pedidos con celular.
@@ -80,7 +88,8 @@ Estado actual:
 - Parcialmente resuelto.
 - Ya existe apertura de WhatsApp con comprobante prearmado desde la app.
 - Ya existe `vipper` como alternativa cuando no hay celular.
-- Queda pendiente pulir el flujo especifico de `pedido listo` para que sea todavia mas directo en caja.
+- Ya existe accion rapida de `pedido listo` desde mostrador y tesoreria.
+- Queda pendiente terminar de definir el flujo final de aviso para la operacion diaria.
 
 ### Etapa 5 - Caja simple y util
 
@@ -122,9 +131,9 @@ Estado actual:
 El siguiente bloque que mas conviene hacer ahora es:
 
 1. Simplificar el acceso para uso interno en una sola PC.
-2. Terminar de pulir la pantalla principal alrededor de la comanda.
-3. Refinar la impresion de comanda para cocina.
-4. Agregar una accion mas directa para marcar `pedido listo`.
+2. Terminar de pulir la pantalla principal alrededor del pedido activo.
+3. Avanzar con el empaquetado local para Windows.
+4. Resolver favicon, icono y acceso directo final.
 
 ## Criterio de exito
 
