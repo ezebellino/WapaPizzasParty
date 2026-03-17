@@ -4,20 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#1E90FF', // Azul brillante para elementos destacados
-        secondary: '#4B5563', // Gris oscuro para elementos secundarios
-        accent: '#F59E0B', // Amarillo para elementos destacados (como botones o enlaces)
-        card: '#2D3748', // Fondo para tarjetas o bloques
-        text: '#E2E8F0', // Texto principal (gris claro)
+        primary: '#bd4f2f',
+        secondary: '#803523',
+        accent: '#ddb15a',
+        background: '#f5ede2',
+        surface: '#fffaf3',
+        card: '#fffdf9',
+        text: '#2f241f',
+        muted: '#7f6c62',
+        success: '#2f7d5b',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Avenir Next', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
-        modern: '0 4px 8px rgba(0, 0, 0, 0.3)', // Sombra más suave
+        modern: '0 20px 45px rgba(86, 54, 37, 0.12)',
       },
     },
   },
   plugins: [],
-}
-
+};

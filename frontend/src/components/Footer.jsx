@@ -1,19 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import styles from '../styles/Footer.module.css';
 
 const Footer = () => {
-    const navigate = useNavigate();
-
     return (
-        <footer className="bg-card text-text text-center py-4">
-            <p>© {new Date().getFullYear()} Pizzería by ZeqeDev. <br /> Todos los derechos reservados.</p>
-            <p
-                className={`${styles.ZeqeDev} text-right text-white font-extrabold cursor-pointer`}
-                onClick={() => navigate('/about-me')}
-            >
-                About Me!
-            </p>
+        <footer className="border-t border-primary/10 bg-surface/70">
+            <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-sm text-muted sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+                <p>WapaPizzasParty · gestion diaria de pedidos, ventas y seguimiento de caja.</p>
+                <p>Base actual: FastAPI + React + almacenamiento JSON.</p>
+            </div>
         </footer>
     );
 };

@@ -1,34 +1,31 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Menu from './pages/Menu';
-import Navbar from './components/Navbar';
-import AboutUs from './pages/AboutUs';
-import Cart from './components/Cart';
-import SalesHistory from './pages/SalesHistory';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import Footer from './components/Footer';
-import AboutMe from './pages/AboutMe';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import SalesHistory from './pages/SalesHistory';
 
 const App = () => {
     return (
-        <div className="min-h-screen flex flex-col bg-background text-text font-sans">
-            <Router>
+        <Router>
+            <div className="min-h-screen bg-background text-text">
                 <Navbar />
-                <main className="flex-grow container mx-auto px-4 py-8">
+                <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-24 sm:px-6 lg:px-8">
                     <Routes>
                         <Route path="/" element={<Home />} />
-                        <Route path="/menu" element={<Menu />} />
-                        <Route path="/about-us" element={<AboutUs />} />
-                        <Route path="/cart" element={<Cart />} />
-                        <Route path="/sales-history" element={<SalesHistory />} />
-                        <Route path="/about-me" element={<AboutMe />} />
+                        <Route path="/tesoreria" element={<SalesHistory />} />
+                        <Route path="/menu" element={<Navigate to="/" replace />} />
+                        <Route path="/cart" element={<Navigate to="/" replace />} />
+                        <Route path="/sales-history" element={<Navigate to="/tesoreria" replace />} />
+                        <Route path="/about-us" element={<Navigate to="/" replace />} />
+                        <Route path="/about-me" element={<Navigate to="/" replace />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
-                    <Footer />
                 </main>
-            </Router>
-        </div>
+                <Footer />
+            </div>
+        </Router>
     );
 };
 

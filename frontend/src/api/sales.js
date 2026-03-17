@@ -9,3 +9,9 @@ export const createSale = (payload) =>
         method: 'POST',
         body: JSON.stringify(payload),
     });
+
+export const updateOrderStatus = (date, orderId, status) =>
+    apiRequest(`/ventas/${date}/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+    });

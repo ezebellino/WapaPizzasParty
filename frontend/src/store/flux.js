@@ -1,5 +1,14 @@
-import { fetchPizzas } from '../api/pizzas';
-import { createSale, fetchSales, fetchSalesByDate } from '../api/sales';
+import { fetchPizzas, updatePizzaAvailability } from '../api/pizzas';
+import { createSale, fetchSales, updateOrderStatus } from '../api/sales';
+
+const resetOrderForm = () => ({
+    receiverName: '',
+    receiverPhone: '',
+    paymentMethod: 'efectivo',
+    notes: '',
+    includeShipping: false,
+    shippingCost: 1500,
+});
 
 const getFlux = (setStore) => ({
     loadSales: async () => {
@@ -21,66 +30,8 @@ const getFlux = (setStore) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 salesLoading: false,
-                appError: 'No pudimos cargar el historial de ventas.',
+                appError: 'No pudimos cargar la tesoreria.',
             }));
-        }
-    },
-
-    getSalesByDate: async (date) => {
-        try {
-            return await fetchSalesByDate(date);
-        } catch (error) {
-            if (error.message.includes('404')) {
-                return null;
-            }
-
-            console.error('Error al obtener ventas:', error);
-            setStore((prevStore) => ({
-                ...prevStore,
-                appError: 'No pudimos consultar las ventas para esa fecha.',
-            }));
-            return null;
-        }
-    },
-
-    confirmarVenta: async () => {
-        try {
-            const snapshot = await new Promise((resolve) => {
-                setStore((prevStore) => {
-                    resolve(prevStore);
-                    return prevStore;
-                });
-            });
-
-            if (snapshot.cart.length === 0) {
-                return false;
-            }
-
-            const totalRevenue = snapshot.cart.reduce(
-                (sum, item) => sum + item.price * item.quantity,
-                snapshot.includeShipping ? 1000 : 0
-            );
-
-            await createSale({
-                sales: snapshot.cart,
-                total_revenue: totalRevenue,
-            });
-
-            setStore((prevStore) => ({
-                ...prevStore,
-                cart: [],
-                includeShipping: false,
-                appError: null,
-            }));
-
-            return true;
-        } catch (error) {
-            console.error('Error al registrar la venta:', error);
-            setStore((prevStore) => ({
-                ...prevStore,
-                appError: 'No pudimos registrar la venta.',
-            }));
-            return false;
         }
     },
 
@@ -103,54 +54,195 @@ const getFlux = (setStore) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 pizzasLoading: false,
-                appError: 'No pudimos cargar el menu de pizzas.',
+                appError: 'No pudimos cargar el catalogo de pizzas.',
             }));
         }
     },
 
-    addToCart: (pizza) => {
-        setStore((prevStore) => {
-            const existingItem = prevStore.cart.find((item) => item.id === pizza.id);
-
-            if (existingItem) {
-                return {
-                    ...prevStore,
-                    cart: prevStore.cart.map((item) =>
-                        item.id === pizza.id
-                            ? { ...item, quantity: item.quantity + 1 }
-                            : item
-                    ),
-                };
-            }
-
-            return {
-                ...prevStore,
-                cart: [...prevStore.cart, { ...pizza, quantity: 1 }],
-            };
-        });
-    },
-
-    removeToCart: (id) => {
+    setOrderField: (field, value) => {
         setStore((prevStore) => ({
             ...prevStore,
-            cart: prevStore.cart.filter((item) => item.id !== id),
-        }));
-    },
-
-    updateCartQuantity: (id, quantity) => {
-        setStore((prevStore) => ({
-            ...prevStore,
-            cart: prevStore.cart.map((item) =>
-                item.id === id ? { ...item, quantity: Math.max(1, parseInt(quantity, 10) || 1) } : item
-            ),
+            orderForm: {
+                ...prevStore.orderForm,
+                [field]: value,
+            },
         }));
     },
 
     toggleShipping: () => {
         setStore((prevStore) => ({
             ...prevStore,
-            includeShipping: !prevStore.includeShipping,
+            orderForm: {
+                ...prevStore.orderForm,
+                includeShipping: !prevStore.orderForm.includeShipping,
+            },
         }));
+    },
+
+    addToCart: (pizza) => {
+        if (!pizza.available) {
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: `${pizza.name} no esta disponible en este momento.`,
+            }));
+            return;
+        }
+
+        setStore((prevStore) => {
+            const existingItem = prevStore.cart.find((item) => item.id === pizza.id);
+
+            if (existingItem) {
+                return {
+                    ...prevStore,
+                    appError: null,
+                    cart: prevStore.cart.map((item) =>
+                        item.id === pizza.id ? { ...item, quantity: item.quantity + 1 } : item
+                    ),
+                };
+            }
+
+            return {
+                ...prevStore,
+                appError: null,
+                cart: [...prevStore.cart, { ...pizza, quantity: 1 }],
+            };
+        });
+    },
+
+    incrementCartItem: (id) => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            cart: prevStore.cart.map((item) =>
+                item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+            ),
+        }));
+    },
+
+    decrementCartItem: (id) => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            cart: prevStore.cart.map((item) =>
+                item.id === id ? { ...item, quantity: Math.max(1, item.quantity - 1) } : item
+            ),
+        }));
+    },
+
+    removeFromCart: (id) => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            cart: prevStore.cart.filter((item) => item.id !== id),
+        }));
+    },
+
+    clearOrderDraft: () => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            cart: [],
+            lastCreatedOrder: null,
+            appError: null,
+            orderForm: resetOrderForm(),
+        }));
+    },
+
+    togglePizzaAvailability: async (pizzaId, available) => {
+        try {
+            const updatedPizza = await updatePizzaAvailability(pizzaId, available);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                pizzas: prevStore.pizzas.map((pizza) =>
+                    pizza.id === pizzaId ? updatedPizza : pizza
+                ),
+                cart: available ? prevStore.cart : prevStore.cart.filter((item) => item.id !== pizzaId),
+            }));
+        } catch (error) {
+            console.error('Error al actualizar disponibilidad:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: 'No pudimos actualizar la disponibilidad de la pizza.',
+            }));
+        }
+    },
+
+    updateOrderStatus: async (date, orderId, status) => {
+        try {
+            const response = await updateOrderStatus(date, orderId, status);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                sales: prevStore.sales.map((day) => ({
+                    ...day,
+                    orders: day.date === date
+                        ? day.orders.map((order) => (order.order_id === orderId ? response.order : order))
+                        : day.orders,
+                })),
+            }));
+            return { success: true };
+        } catch (error) {
+            console.error('Error al actualizar estado del pedido:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: 'No pudimos actualizar el estado del pedido.',
+            }));
+            return { success: false };
+        }
+    },
+
+    confirmarVenta: async () => {
+        let snapshot;
+        setStore((prevStore) => {
+            snapshot = prevStore;
+            return {
+                ...prevStore,
+                submittingOrder: true,
+                appError: null,
+                lastCreatedOrder: null,
+            };
+        });
+
+        try {
+            const { cart, orderForm } = snapshot;
+
+            if (cart.length === 0) {
+                throw new Error('Agrega al menos una pizza al pedido.');
+            }
+
+            if (!orderForm.receiverName.trim()) {
+                throw new Error('Ingresa quien recibe la pizza.');
+            }
+
+            const response = await createSale({
+                receiver_name: orderForm.receiverName,
+                receiver_phone: orderForm.receiverPhone,
+                payment_method: orderForm.paymentMethod,
+                notes: orderForm.notes,
+                include_shipping: orderForm.includeShipping,
+                shipping_cost: Number(orderForm.shippingCost) || 0,
+                sales: cart,
+            });
+
+            const refreshedSales = await fetchSales();
+
+            setStore((prevStore) => ({
+                ...prevStore,
+                sales: refreshedSales,
+                cart: [],
+                submittingOrder: false,
+                lastCreatedOrder: response.order,
+                appError: null,
+                orderForm: resetOrderForm(),
+            }));
+
+            return { success: true, order: response.order };
+        } catch (error) {
+            console.error('Error al registrar la venta:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                submittingOrder: false,
+                appError: error.message || 'No pudimos registrar el pedido.',
+            }));
+            return { success: false };
+        }
     },
 });
 
