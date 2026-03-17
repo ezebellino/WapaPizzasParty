@@ -7,6 +7,7 @@ import {
     buildStockAlerts,
     buildTopProducts,
     buildTreasuryStats,
+    downloadTreasuryCsv,
     formatCurrency,
     getStatusBadgeClass,
     getStockBadgeClass,
@@ -53,14 +54,23 @@ const SalesHistory = () => {
                         </p>
                     </div>
 
-                    <div className="w-full max-w-xs">
-                        <label className="mb-2 block text-sm font-medium text-muted">Filtrar por fecha</label>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(event) => setSelectedDate(event.target.value)}
-                            className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
-                        />
+                    <div className="flex w-full flex-col gap-3 md:max-w-sm">
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-muted">Filtrar por fecha</label>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(event) => setSelectedDate(event.target.value)}
+                                className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => downloadTreasuryCsv(filteredDays, selectedDate)}
+                            className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
+                        >
+                            Exportar CSV
+                        </button>
                     </div>
                 </div>
 

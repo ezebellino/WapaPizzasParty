@@ -157,3 +157,57 @@ export const buildStockAlerts = (pizzas) =>
     pizzas
         .filter((pizza) => !pizza.available || pizza.stock <= pizza.low_stock_threshold)
         .sort((a, b) => a.stock - b.stock);
+
+const escapeCsvValue = (value) => {
+    const normalized = String(value ?? '').replace(/"/g, '""');
+    return `"${normalized}"`;
+};
+
+export const downloadTreasuryCsv = (salesDays, selectedDate) => {
+    const orders = flattenOrders(salesDays);
+    const headers = [
+        'fecha',
+        'pedido_id',
+        'receptor',
+        'telefono',
+        'medio_pago',
+        'estado',
+        'incluye_envio',
+        'costo_envio',
+        'subtotal',
+        'total',
+        'detalle_pizzas',
+        'observaciones',
+    ];
+
+    const rows = orders.map((order) => [
+        order.date,
+        order.order_id,
+        order.receiver_name,
+        order.receiver_phone,
+        order.payment_method,
+        order.status,
+        order.include_shipping ? 'si' : 'no',
+        order.shipping_cost,
+        order.subtotal,
+        order.total,
+        order.sales.map((item) => `${item.name} x${item.quantity}`).join(' | '),
+        order.notes,
+    ]);
+
+    const csv = [headers, ...rows]
+        .map((row) => row.map(escapeCsvValue).join(','))
+        .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const suffix = selectedDate || 'todas-las-fechas';
+
+    link.href = url;
+    link.setAttribute('download', `tesoreria-${suffix}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
