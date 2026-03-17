@@ -20,13 +20,16 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '').strip()
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '').strip()
 TWILIO_WHATSAPP_FROM = os.getenv('TWILIO_WHATSAPP_FROM', '').strip()
 TWILIO_STATUS_CALLBACK_URL = os.getenv('TWILIO_STATUS_CALLBACK_URL', '').strip()
+BUSINESS_PHONE = os.getenv('WAPA_BUSINESS_PHONE', '2245509530').strip()
+BUSINESS_INSTAGRAM = os.getenv('WAPA_INSTAGRAM', 'https://www.instagram.com/wapapizzaparty').strip()
+BUSINESS_FACEBOOK = os.getenv('WAPA_FACEBOOK', 'https://www.facebook.com/SoleMoranWapaPizzaParty').strip()
 
 STATUS_MESSAGES = {
-    'procesado': 'Hola {receiver_name}, tu pedido de WapaPizzas ya fue procesado. Total: ${total}.',
-    'en_preparacion': 'Hola {receiver_name}, tu pedido de WapaPizzas ya esta en preparacion.',
-    'listo_para_retirar': 'Hola {receiver_name}, tu pedido de WapaPizzas esta listo para retirar. Puedes pasar a buscarlo.',
+    'procesado': 'Hola {receiver_name}, tu pedido en WapaPizzas fue procesado.',
+    'en_preparacion': 'Hola {receiver_name}, tu pedido en WapaPizzas ya esta en preparacion.',
+    'listo_para_retirar': 'Hola {receiver_name}, tu pedido en WapaPizzas esta listo para retirar.',
     'entregado': 'Hola {receiver_name}, gracias por tu compra en WapaPizzas.',
-    'cancelado': 'Hola {receiver_name}, tu pedido de WapaPizzas fue cancelado. Si necesitas ayuda, escribenos.',
+    'cancelado': 'Hola {receiver_name}, tu pedido en WapaPizzas fue cancelado. Si necesitas ayuda, escribenos.',
 }
 
 
@@ -72,15 +75,71 @@ def normalize_phone_number(phone: str) -> str:
     raise ValueError('Ingresa un telefono con codigo de area valido para enviar WhatsApp.')
 
 
+def format_currency(value: int) -> str:
+    formatted = f'{value:,.0f}'
+    return formatted.replace(',', '.')
+
+
+def format_quantity(value: float) -> str:
+    normalized = round(value * 2) / 2
+    if abs(normalized - 0.5) < 1e-9:
+        return '1/2 pizza'
+    if abs(normalized - round(normalized)) < 1e-9:
+        whole = int(round(normalized))
+        return f'{whole} pizza' if whole == 1 else f'{whole} pizzas'
+
+    whole = int(normalized)
+    return f'{whole} 1/2 pizzas'
+
+
+def build_order_lines(order: Order) -> list[str]:
+    return [
+        f"- {format_quantity(item.quantity)} de {item.name}: ${format_currency(round(item.price * item.quantity))}"
+        for item in order.sales
+    ]
+
+
 def build_whatsapp_message(order: Order) -> str:
     template = STATUS_MESSAGES.get(order.status, '')
     if not template:
         return ''
 
-    return template.format(
-        receiver_name=order.receiver_name,
-        total=order.total,
-    )
+    intro = template.format(receiver_name=order.receiver_name)
+    order_lines = '\n'.join(build_order_lines(order))
+    shipping_label = f"${format_currency(order.shipping_cost)}" if order.include_shipping else '$0'
+    notes_line = f"Observaciones: {order.notes}" if order.notes else 'Observaciones: Sin observaciones.'
+    pickup_hint = 'Puedes retirarlo coordinando con WapaPizzas.' if order.status == 'listo_para_retirar' else ''
+
+    message_parts = [
+        intro,
+        '',
+        'Comprobante de pedido',
+        f"Pedido: {order.order_id}",
+        f"Cliente: {order.receiver_name}",
+        f"Telefono: {order.receiver_phone or 'No informado'}",
+        f"Medio de pago: {order.payment_method.replace('_', ' ')}",
+        '',
+        'Detalle:',
+        order_lines,
+        '',
+        f"Subtotal: ${format_currency(order.subtotal)}",
+        f"Envio: {shipping_label}",
+        f"Total: ${format_currency(order.total)}",
+        notes_line,
+    ]
+
+    if pickup_hint:
+        message_parts.extend(['', pickup_hint])
+
+    message_parts.extend([
+        '',
+        'Siguenos y contactanos:',
+        f"WhatsApp WapaPizzas: {BUSINESS_PHONE}",
+        f"Instagram: {BUSINESS_INSTAGRAM}",
+        f"Facebook: {BUSINESS_FACEBOOK}",
+    ])
+
+    return '\n'.join(part for part in message_parts if part is not None)
 
 
 def dispatch_mock_notification(order: Order, message: str, sent_at: str) -> NotificationDispatchResult:

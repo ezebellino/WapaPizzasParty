@@ -88,6 +88,9 @@ TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 TWILIO_STATUS_CALLBACK_URL=https://tu-dominio.com/webhooks/twilio/whatsapp
+WAPA_BUSINESS_PHONE=2245509530
+WAPA_INSTAGRAM=https://www.instagram.com/wapapizzaparty
+WAPA_FACEBOOK=https://www.facebook.com/SoleMoranWapaPizzaParty
 ```
 
 En modo `mock`, la aplicacion prepara y registra el mensaje sin enviarlo.
