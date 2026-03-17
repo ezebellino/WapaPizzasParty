@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 
 ORDER_STATUSES = {'procesado', 'en_preparacion', 'listo_para_retirar', 'entregado', 'cancelado'}
 USER_ROLES = {'admin', 'operator'}
+WHATSAPP_NOTIFICATION_STATUSES = {'no_solicitado', 'pendiente', 'simulado', 'enviado', 'fallido'}
 
 
 def normalize_half_step(value: float, *, allow_zero: bool = False) -> float:
@@ -145,6 +146,10 @@ class Order(OrderBase):
     subtotal: int = Field(ge=0)
     total: int = Field(ge=0)
     whatsapp_notification_status: str = Field(default='pendiente')
+    whatsapp_last_message: str = Field(default='')
+    whatsapp_last_notification_at: str = Field(default='')
+    whatsapp_last_notified_status: str = Field(default='')
+    whatsapp_last_error: str = Field(default='')
 
     @field_validator('status')
     @classmethod
@@ -152,6 +157,14 @@ class Order(OrderBase):
         normalized_status = status.strip().lower()
         if normalized_status not in ORDER_STATUSES:
             raise ValueError('Estado de pedido invalido.')
+        return normalized_status
+
+    @field_validator('whatsapp_notification_status')
+    @classmethod
+    def validate_whatsapp_notification_status(cls, status: str) -> str:
+        normalized_status = status.strip().lower()
+        if normalized_status not in WHATSAPP_NOTIFICATION_STATUSES:
+            raise ValueError('Estado de notificacion de WhatsApp invalido.')
         return normalized_status
 
 

@@ -235,9 +235,16 @@ const SalesHistory = () => {
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
                                                 <p className="text-sm text-muted">{order.date} - {order.payment_method}</p>
                                                 {order.notify_whatsapp ? (
-                                                    <p className="mt-1 text-xs uppercase tracking-wide text-muted">
-                                                        WhatsApp: {order.whatsapp_notification_status}
-                                                    </p>
+                                                    <div className="mt-1 space-y-1">
+                                                        <p className="text-xs uppercase tracking-wide text-muted">
+                                                            WhatsApp: {order.whatsapp_notification_status}
+                                                        </p>
+                                                        {order.whatsapp_last_notification_at ? (
+                                                            <p className="text-xs text-muted">
+                                                                Ultimo intento: {new Date(order.whatsapp_last_notification_at).toLocaleString('es-AR')}
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
                                                 ) : null}
                                             </div>
                                             <div className="text-right">
@@ -249,9 +256,16 @@ const SalesHistory = () => {
                                         </div>
 
                                         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <p className="text-sm text-muted">
-                                                {order.sales.map((item) => formatSaleItemLabel(item)).join(' + ')} - {order.include_shipping ? 'con envio' : 'sin envio'}
-                                            </p>
+                                            <div className="space-y-1">
+                                                <p className="text-sm text-muted">
+                                                    {order.sales.map((item) => formatSaleItemLabel(item)).join(' + ')} - {order.include_shipping ? 'con envio' : 'sin envio'}
+                                                </p>
+                                                {order.notify_whatsapp && order.whatsapp_last_message ? (
+                                                    <p className="text-xs text-muted">
+                                                        Mensaje: {order.whatsapp_last_message}
+                                                    </p>
+                                                ) : null}
+                                            </div>
                                             <select
                                                 value={order.status}
                                                 onChange={(event) => actions.updateOrderStatus(order.date, order.order_id, event.target.value)}

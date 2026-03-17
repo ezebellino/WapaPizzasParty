@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth import create_access_token, decode_access_token, verify_password
+from .notifications import dispatch_whatsapp_notification, should_notify_status
 from .schemas import (
     AuthSession,
     LoginRequest,
@@ -121,6 +122,33 @@ def build_order_from_payload(payload: OrderCreate) -> Order:
         subtotal=subtotal,
         total=subtotal + shipping_cost,
         whatsapp_notification_status='pendiente' if payload.notify_whatsapp else 'no_solicitado',
+    )
+
+
+def sync_order_whatsapp_status(order: Order) -> Order:
+    if not order.notify_whatsapp:
+        return order.model_copy(
+            update={
+                'whatsapp_notification_status': 'no_solicitado',
+                'whatsapp_last_message': '',
+                'whatsapp_last_notification_at': '',
+                'whatsapp_last_notified_status': '',
+                'whatsapp_last_error': '',
+            }
+        )
+
+    if not should_notify_status(order.status):
+        return order
+
+    result = dispatch_whatsapp_notification(order)
+    return order.model_copy(
+        update={
+            'whatsapp_notification_status': result.delivery_status,
+            'whatsapp_last_message': result.message,
+            'whatsapp_last_notification_at': result.sent_at,
+            'whatsapp_last_notified_status': order.status,
+            'whatsapp_last_error': result.error,
+        }
     )
 
 
@@ -262,7 +290,7 @@ async def registrar_venta(
     pizzas = load_pizzas()
     updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)
     ventas = cargar_ventas()
-    nueva_orden = build_order_from_payload(venta)
+    nueva_orden = sync_order_whatsapp_status(build_order_from_payload(venta))
     fecha_actual = datetime.now().strftime('%Y-%m-%d')
 
     for dia in ventas:
@@ -304,11 +332,9 @@ async def actualizar_estado_pedido(
                 updated_order = order.model_copy(
                     update={
                         'status': payload.status,
-                        'whatsapp_notification_status': (
-                            'pendiente' if order.notify_whatsapp else order.whatsapp_notification_status
-                        ),
                     }
                 )
+                updated_order = sync_order_whatsapp_status(updated_order)
                 dia.orders[index] = updated_order
                 refresh_sales_day(dia)
                 guardar_ventas(ventas)
