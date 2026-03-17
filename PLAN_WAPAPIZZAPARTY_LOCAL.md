@@ -53,9 +53,11 @@ Estado actual:
 
 Estado actual:
 
-- En progreso inicial.
+- En progreso firme.
 - Ya se relajaron varias restricciones de permisos para una sola PC.
-- El siguiente paso fuerte es simplificar el acceso y el flujo principal de toma de pedido.
+- Ya se reordeno el mostrador para priorizar la toma de pedido, los pedidos activos y la columna operativa.
+- Ya se quitaron controles manuales de stock innecesarios en la UI: el descuento se hace automatico al registrar la venta.
+- El siguiente paso fuerte es simplificar todavia mas el acceso y terminar de pulir el flujo principal de toma de pedido.
 
 ### Etapa 3 - Comanda para cocina
 
@@ -77,7 +79,8 @@ Estado actual:
 
 - Parcialmente resuelto.
 - Ya existe apertura de WhatsApp con comprobante prearmado desde la app.
-- Queda pendiente incorporar `vipper` y el flujo especifico de `pedido listo`.
+- Ya existe `vipper` como alternativa cuando no hay celular.
+- Queda pendiente pulir el flujo especifico de `pedido listo` para que sea todavia mas directo en caja.
 
 ### Etapa 5 - Caja simple y util
 
@@ -86,6 +89,14 @@ Estado actual:
   ventas del dia, total cobrado, medios de pago y cantidad de pizzas.
 - Sacar complejidad de estados manuales que no aporten al nuevo flujo.
 - Conservar exportacion y reportes utiles sin volver la pantalla pesada.
+
+Estado actual:
+
+- En progreso firme.
+- Tesoreria ya permite filtrar por rango de fechas.
+- Ya existe exportacion CSV del rango elegido.
+- Ya se agregaron visuales simples de facturacion y produccion por dia.
+- El siguiente paso es profundizar metricas sin perder velocidad de uso.
 
 ### Etapa 6 - Aplicacion de escritorio
 
@@ -110,10 +121,10 @@ Estado actual:
 
 El siguiente bloque que mas conviene hacer ahora es:
 
-1. Terminar de unificar acceso y permisos para una sola PC.
-2. Redisenar la pantalla principal alrededor de la comanda.
-3. Agregar impresion de comanda para cocina.
-4. Incorporar `vipper` cuando no haya celular.
+1. Simplificar el acceso para uso interno en una sola PC.
+2. Terminar de pulir la pantalla principal alrededor de la comanda.
+3. Refinar la impresion de comanda para cocina.
+4. Agregar una accion mas directa para marcar `pedido listo`.
 
 ## Criterio de exito
 

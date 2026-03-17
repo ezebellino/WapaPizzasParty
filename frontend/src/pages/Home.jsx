@@ -72,7 +72,7 @@ const Home = () => {
             Swal.fire({
                 icon: 'success',
                 title: 'Pedido guardado',
-                text: `${result.order.receiver_name} debe abonar ${formatCurrency(result.order.total)}.`,
+                text: `${result.order.receiver_name} debe abonar ${formatCurrency(result.order.total)}. El stock se actualizo automaticamente.`,
                 confirmButtonText: 'Seguir cargando',
             });
         }
@@ -114,7 +114,7 @@ const Home = () => {
                                 </div>
                             </div>
                             <p className="mt-2 max-w-2xl text-sm text-muted">
-                                Carga pedidos rapido, calcula el total automaticamente, deja lista la comanda y define si el aviso se hace por WhatsApp o vipper.
+                                Carga pedidos rapido, calcula el total automaticamente, descuenta stock al registrar la venta y deja lista la comanda para cocina.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-secondary">
@@ -147,12 +147,12 @@ const Home = () => {
                 </div>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+            <section className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
                 <div className="space-y-4 rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <h3 className="text-2xl font-semibold text-text">Catalogo de pizzas</h3>
-                            <p className="text-sm text-muted">Busca rapido, controla stock y agrega medias pizzas al pedido.</p>
+                            <p className="text-sm text-muted">Busca rapido y agrega pizzas al pedido. El stock se descuenta automaticamente al confirmar la venta.</p>
                         </div>
                         <input
                             type="search"
@@ -213,30 +213,9 @@ const Home = () => {
                                                 {pizza.available && pizza.stock >= 1 ? 'Agregar 1 pizza' : 'Sin stock completo'}
                                             </button>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    actions.updatePizzaInventory(pizza.id, {
-                                                        stock: Math.max(0, pizza.stock - 0.5),
-                                                    })
-                                                }
-                                                className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
-                                            >
-                                                -1/2 stock
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    actions.updatePizzaInventory(pizza.id, {
-                                                        stock: pizza.stock + 0.5,
-                                                    })
-                                                }
-                                                className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
-                                            >
-                                                +1/2 stock
-                                            </button>
-                                        </div>
+                                        <p className="rounded-2xl border border-primary/10 bg-background/60 px-4 py-3 text-xs text-muted">
+                                            Disponible para venta inmediata. Si se confirma el pedido, el stock baja en forma automatica.
+                                        </p>
                                     </div>
                                 </article>
                             ))
@@ -246,7 +225,7 @@ const Home = () => {
                     </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 xl:sticky xl:top-28 xl:self-start">
                     <aside className="rounded-[28px] border border-primary/10 bg-white/90 p-6 shadow-modern">
                         <div className="flex items-start justify-between gap-3">
                             <div>
@@ -477,6 +456,58 @@ const Home = () => {
                     <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                         <div className="flex items-center justify-between">
                             <div>
+                                <h3 className="text-2xl font-semibold text-text">Pedidos activos</h3>
+                                <p className="text-sm text-muted">Procesados, en preparacion o listos para retirar.</p>
+                            </div>
+                            <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
+                                {openOrders.length}
+                            </span>
+                        </div>
+
+                        <div className="mt-5 space-y-3">
+                            {openOrders.length > 0 ? (
+                                openOrders.map((order) => (
+                                    <div key={order.order_id} className="rounded-2xl border border-primary/10 bg-background/60 p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-semibold text-text">{order.receiver_name}</p>
+                                                <p className="text-sm text-muted">
+                                                    {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
+                                                </p>
+                                            </div>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
+                                                {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
+                                            </span>
+                                        </div>
+                                        {order.notify_whatsapp ? (
+                                            <p className="mt-2 text-xs uppercase tracking-wide text-muted">
+                                                Aviso por WhatsApp preparado
+                                            </p>
+                                        ) : null}
+                                        {order.use_vipper ? (
+                                            <p className="mt-2 text-xs uppercase tracking-wide text-muted">
+                                                Aviso por vipper {order.vipper_code}
+                                            </p>
+                                        ) : null}
+                                        <p className="mt-3 text-sm font-medium text-text">{formatCurrency(order.total)}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-primary/20 bg-background/60 p-5 text-sm text-muted">
+                                    <div className="flex items-center gap-3">
+                                        <span className="rounded-full bg-primary/10 p-3 text-primary">
+                                            <FaStoreSlash />
+                                        </span>
+                                        <span>No hay pedidos activos en este momento.</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <div className="flex items-center justify-between">
+                            <div>
                                 <h3 className="text-2xl font-semibold text-text">Alertas de stock</h3>
                                 <p className="text-sm text-muted">Productos sin stock o cerca de agotarse.</p>
                             </div>
@@ -507,53 +538,6 @@ const Home = () => {
                                             <FaStoreSlash />
                                         </span>
                                         <span>No hay alertas de stock en este momento.</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-2xl font-semibold text-text">Pedidos activos</h3>
-                                <p className="text-sm text-muted">Procesados, en preparacion o listos para retirar.</p>
-                            </div>
-                            <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
-                                {openOrders.length}
-                            </span>
-                        </div>
-
-                        <div className="mt-5 space-y-3">
-                            {openOrders.length > 0 ? (
-                                openOrders.map((order) => (
-                                    <div key={order.order_id} className="rounded-2xl border border-primary/10 bg-background/60 p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="font-semibold text-text">{order.receiver_name}</p>
-                                                <p className="text-sm text-muted">
-                                                    {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
-                                                </p>
-                                            </div>
-                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
-                                                {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
-                                            </span>
-                                        </div>
-                                        {order.notify_whatsapp ? (
-                                            <p className="mt-2 text-xs uppercase tracking-wide text-muted">
-                                                Aviso por WhatsApp preparado
-                                            </p>
-                                        ) : null}
-                                        <p className="mt-3 text-sm font-medium text-text">{formatCurrency(order.total)}</p>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="rounded-2xl border border-dashed border-primary/20 bg-background/60 p-5 text-sm text-muted">
-                                    <div className="flex items-center gap-3">
-                                        <span className="rounded-full bg-primary/10 p-3 text-primary">
-                                            <FaStoreSlash />
-                                        </span>
-                                        <span>No hay pedidos activos en este momento.</span>
                                     </div>
                                 </div>
                             )}

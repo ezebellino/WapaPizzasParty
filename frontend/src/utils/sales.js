@@ -110,6 +110,16 @@ export const buildTopProducts = (salesDays) => {
     return [...ranking.values()].sort((a, b) => b.quantity - a.quantity);
 };
 
+export const buildDailyPerformance = (salesDays) =>
+    [...salesDays]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((day) => ({
+            date: day.date,
+            revenue: day.total_revenue,
+            pizzas: day.total_pizzas,
+            orders: day.order_count,
+        }));
+
 export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
         .filter((order) =>

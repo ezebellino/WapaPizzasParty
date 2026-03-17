@@ -5,12 +5,15 @@
 :root {
     color: #2f241f;
     background:
-        radial-gradient(circle at top left, rgba(221, 177, 90, 0.18), transparent 28%),
-        linear-gradient(180deg, #fff9f1 0%, #f5ede2 100%);
+        linear-gradient(rgba(255, 249, 241, 0.9), rgba(245, 237, 226, 0.92)),
+        url('../assets/FondoWapaPizzaParty.jpeg');
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
 }
 
 html {
@@ -22,6 +25,13 @@ body {
     min-height: 100vh;
     background: inherit;
     color: inherit;
+}
+
+#root {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(245, 0, 126, 0.08), transparent 22%),
+        radial-gradient(circle at bottom right, rgba(189, 79, 47, 0.08), transparent 20%);
 }
 
 a {

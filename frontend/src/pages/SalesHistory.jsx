@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { AppContext } from '../store/AppContext';
 import {
+    buildDailyPerformance,
     ORDER_STATUS_OPTIONS,
     buildPaymentBreakdown,
     buildStatusBreakdown,
@@ -21,7 +22,8 @@ import {
 
 const SalesHistory = () => {
     const { store, actions } = useContext(AppContext);
-    const [selectedDate, setSelectedDate] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         actions.loadSales();
@@ -29,14 +31,15 @@ const SalesHistory = () => {
     }, [actions]);
 
     const filteredDays = useMemo(() => {
-        if (!selectedDate) {
-            return store.sales;
-        }
-
-        return store.sales.filter((day) => day.date === selectedDate);
-    }, [selectedDate, store.sales]);
+        return store.sales.filter((day) => {
+            const matchesStart = !startDate || day.date >= startDate;
+            const matchesEnd = !endDate || day.date <= endDate;
+            return matchesStart && matchesEnd;
+        });
+    }, [endDate, startDate, store.sales]);
 
     const stats = buildTreasuryStats(filteredDays);
+    const dailyPerformance = buildDailyPerformance(filteredDays);
     const topProducts = buildTopProducts(filteredDays).slice(0, 5);
     const stockAlerts = buildStockAlerts(store.pizzas).slice(0, 6);
     const paymentBreakdown = buildPaymentBreakdown(filteredDays);
@@ -46,6 +49,9 @@ const SalesHistory = () => {
         .slice(0, 8);
 
     const dailyRows = [...filteredDays].sort((a, b) => b.date.localeCompare(a.date));
+    const exportLabel = [startDate || 'inicio', endDate || 'hoy'].join('_a_');
+    const maxRevenue = Math.max(...dailyPerformance.map((item) => item.revenue), 1);
+    const maxPizzas = Math.max(...dailyPerformance.map((item) => item.pizzas), 1);
 
     return (
         <div className="space-y-8">
@@ -59,19 +65,38 @@ const SalesHistory = () => {
                         </p>
                     </div>
 
-                    <div className="flex w-full flex-col gap-3 md:max-w-sm">
+                    <div className="grid w-full gap-3 md:max-w-xl md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-muted">Filtrar por fecha</label>
+                            <label className="mb-2 block text-sm font-medium text-muted">Desde</label>
                             <input
                                 type="date"
-                                value={selectedDate}
-                                onChange={(event) => setSelectedDate(event.target.value)}
+                                value={startDate}
+                                onChange={(event) => setStartDate(event.target.value)}
+                                className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-muted">Hasta</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(event) => setEndDate(event.target.value)}
                                 className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
                             />
                         </div>
                         <button
                             type="button"
-                            onClick={() => downloadTreasuryCsv(filteredDays, selectedDate)}
+                            onClick={() => {
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                            className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
+                        >
+                            Limpiar filtro
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => downloadTreasuryCsv(filteredDays, exportLabel)}
                             className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
                         >
                             Exportar CSV
@@ -102,6 +127,69 @@ const SalesHistory = () => {
                         <p className="mt-1 text-sm text-muted">
                             {stats.bestDay ? formatCurrency(stats.bestDay.total_revenue) : 'Aun sin ventas'}
                         </p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="grid gap-6 xl:grid-cols-2">
+                <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-2xl font-semibold text-text">Facturacion por dia</h3>
+                            <p className="text-sm text-muted">Rango actual de ventas del periodo seleccionado.</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 space-y-3">
+                        {dailyPerformance.length > 0 ? (
+                            dailyPerformance.map((item) => (
+                                <div key={item.date} className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-text">{item.date}</span>
+                                        <span className="text-muted">{formatCurrency(item.revenue)}</span>
+                                    </div>
+                                    <div className="h-3 rounded-full bg-background">
+                                        <div
+                                            className="h-3 rounded-full bg-primary"
+                                            style={{ width: `${Math.max((item.revenue / maxRevenue) * 100, 6)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-muted">No hay datos en el rango elegido.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-2xl font-semibold text-text">Produccion por dia</h3>
+                            <p className="text-sm text-muted">Cantidad de pizzas y pedidos registrados por jornada.</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 space-y-3">
+                        {dailyPerformance.length > 0 ? (
+                            dailyPerformance.map((item) => (
+                                <div key={item.date} className="rounded-2xl bg-background/70 p-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-text">{item.date}</span>
+                                        <span className="text-sm text-muted">{item.orders} pedidos</span>
+                                    </div>
+                                    <div className="mt-3 h-3 rounded-full bg-white">
+                                        <div
+                                            className="h-3 rounded-full bg-secondary"
+                                            style={{ width: `${Math.max((item.pizzas / maxPizzas) * 100, 6)}%` }}
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-sm text-muted">{formatPizzaQuantity(item.pizzas)}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-muted">No hay produccion registrada en este rango.</p>
+                        )}
                     </div>
                 </div>
             </section>
