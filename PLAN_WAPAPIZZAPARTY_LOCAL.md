@@ -122,7 +122,9 @@ Estado actual:
 - En progreso inicial.
 - El backend ya puede servir el frontend compilado en modo local.
 - Ya existe script de arranque local para Windows.
-- El siguiente paso es resolver acceso directo, icono y estrategia final de instalacion.
+- Ya existe favicon e icono base del producto para navegador y acceso directo.
+- Ya existe script para crear acceso directo en el escritorio.
+- El siguiente paso es definir si hace falta instalador o si el launcher local alcanza para la operacion.
 
 ## Orden recomendado de implementacion
 
@@ -138,10 +140,10 @@ Estado actual:
 
 El siguiente bloque que mas conviene hacer ahora es:
 
-1. Resolver favicon, icono y acceso directo final.
-2. Ajustar documentacion final de instalacion del puesto.
-3. Evaluar si el login manual se mantiene o se oculta en modo puesto.
-4. Definir si hace falta empaquetado instalable o si alcanza con launcher local.
+1. Ajustar documentacion final de instalacion del puesto.
+2. Evaluar si el login manual se mantiene o se oculta en modo puesto.
+3. Definir si hace falta empaquetado instalable o si alcanza con launcher local.
+4. Probar el circuito completo en una PC limpia del negocio.
 
 ## Criterio de exito
 

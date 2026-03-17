@@ -144,6 +144,22 @@ Si quieres forzar una recompilacion del frontend:
 .\scripts\start-local-app.ps1 -BuildFrontend
 ```
 
+### Acceso directo en el escritorio
+
+Para crear un acceso directo de Windows con el icono de WapaPizzaParty:
+
+```powershell
+.\scripts\create-desktop-shortcut.ps1
+```
+
+O bien:
+
+```bat
+.\scripts\create-desktop-shortcut.cmd
+```
+
+Eso genera `WapaPizzaParty.lnk` en el escritorio, apuntando al lanzador local de la aplicacion.
+
 ## Flujo actual de datos
 
 - El frontend consulta pizzas en `GET /pizzas`.
