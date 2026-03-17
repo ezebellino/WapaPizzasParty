@@ -4,41 +4,53 @@
         "name": "Muzzarella",
         "description": "Clasica pizza de muzzarella con oregano y aceitunas.",
         "price": 7500,
-        "available": true
+        "available": true,
+        "stock": 12,
+        "low_stock_threshold": 4
     },
     {
         "id": 2,
         "name": "Napolitana",
         "description": "Pizza con rodajas de tomate y ajo, cubierta con muzzarella y oregano.",
         "price": 8000,
-        "available": true
+        "available": true,
+        "stock": 10,
+        "low_stock_threshold": 4
     },
     {
         "id": 3,
         "name": "Especial",
         "description": "Jamon, morron, muzzarella, oregano y aceitunas.",
         "price": 8000,
-        "available": true
+        "available": true,
+        "stock": 8,
+        "low_stock_threshold": 3
     },
     {
         "id": 4,
         "name": "Fugazzeta",
         "description": "Pizza con muzzarella, oregano, aceitunas y cubierta con cebolla cocida.",
         "price": 8000,
-        "available": true
+        "available": true,
+        "stock": 6,
+        "low_stock_threshold": 3
     },
     {
         "id": 5,
         "name": "Roquefort",
         "description": "Muzzarella, roquefort, oregano y aceitunas.",
         "price": 9000,
-        "available": true
+        "available": true,
+        "stock": 5,
+        "low_stock_threshold": 2
     },
     {
         "id": 6,
         "name": "Matambre",
         "description": "Muzzarella, matambre, oregano y aceitunas.",
         "price": 9500,
-        "available": true
+        "available": true,
+        "stock": 4,
+        "low_stock_threshold": 2
     }
 ]

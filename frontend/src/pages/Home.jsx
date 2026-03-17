@@ -5,12 +5,15 @@ import { AppContext } from '../store/AppContext';
 import {
     ORDER_STATUS_OPTIONS,
     buildOpenOrders,
+    buildStockAlerts,
     buildTreasuryStats,
     calculateCartPizzas,
     calculateCartSubtotal,
     calculateCartTotal,
     formatCurrency,
     getStatusBadgeClass,
+    getStockBadgeClass,
+    getStockLabel,
 } from '../utils/sales';
 
 const paymentOptions = [
@@ -43,6 +46,7 @@ const Home = () => {
     const today = new Date().toISOString().split('T')[0];
     const todaySales = store.sales.find((day) => day.date === today);
     const openOrders = buildOpenOrders(store.sales).slice(0, 5);
+    const stockAlerts = buildStockAlerts(store.pizzas);
     const treasuryStats = buildTreasuryStats(store.sales);
     const subtotal = calculateCartSubtotal(store.cart);
     const pizzasCount = calculateCartPizzas(store.cart);
@@ -74,9 +78,9 @@ const Home = () => {
             helper: 'Produccion acumulada del dia',
         },
         {
-            label: 'Facturacion total',
-            value: formatCurrency(treasuryStats.totalRevenue),
-            helper: 'Acumulado historico cargado',
+            label: 'Alertas de stock',
+            value: stockAlerts.length,
+            helper: 'Productos a revisar',
         },
     ];
 
@@ -89,7 +93,7 @@ const Home = () => {
                             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Mostrador</p>
                             <h2 className="mt-2 text-3xl font-semibold text-text">Carga rapida de pedidos</h2>
                             <p className="mt-2 max-w-2xl text-sm text-muted">
-                                Toma pedidos rapido, calcula el total automaticamente y controla el trabajo en curso.
+                                Toma pedidos rapido, calcula el total automaticamente y controla pedidos y stock en una sola vista.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-secondary">
@@ -113,11 +117,11 @@ const Home = () => {
                     <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/80">Operacion</p>
                     <h2 className="mt-3 text-2xl font-semibold">Panel liviano y util</h2>
                     <p className="mt-3 text-sm text-white/80">
-                        Menos imagenes, mas control del negocio: pedidos activos, disponibilidad y tesoreria clara.
+                        Mas control del negocio: pedidos activos, disponibilidad y alertas para no vender de mas.
                     </p>
                     <div className="mt-6 rounded-2xl bg-white/10 p-4">
-                        <p className="text-sm text-white/80">Pedidos activos</p>
-                        <p className="mt-2 text-3xl font-semibold">{openOrders.length}</p>
+                        <p className="text-sm text-white/80">Facturacion acumulada</p>
+                        <p className="mt-2 text-3xl font-semibold">{formatCurrency(treasuryStats.totalRevenue)}</p>
                     </div>
                 </div>
             </section>
@@ -127,7 +131,7 @@ const Home = () => {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <h3 className="text-2xl font-semibold text-text">Catalogo de pizzas</h3>
-                            <p className="text-sm text-muted">Busca rapido, controla disponibilidad y agrega al pedido.</p>
+                            <p className="text-sm text-muted">Busca rapido, controla stock y agrega al pedido.</p>
                         </div>
                         <input
                             type="search"
@@ -146,21 +150,17 @@ const Home = () => {
                                 <article
                                     key={pizza.id}
                                     className={`flex h-full flex-col rounded-3xl border p-5 transition ${
-                                        pizza.available
+                                        pizza.available && pizza.stock > 0
                                             ? 'border-primary/10 bg-surface hover:-translate-y-0.5 hover:shadow-modern'
                                             : 'border-dashed border-primary/20 bg-background/70 opacity-80'
                                     }`}
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <h4 className="text-xl font-semibold text-text">{pizza.name}</h4>
-                                                <span
-                                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                                        pizza.available ? 'bg-success/15 text-success' : 'bg-red-100 text-red-700'
-                                                    }`}
-                                                >
-                                                    {pizza.available ? 'Disponible' : 'No disponible'}
+                                                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${getStockBadgeClass(pizza)}`}>
+                                                    {getStockLabel(pizza)}
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-sm leading-6 text-muted">{pizza.description}</p>
@@ -174,18 +174,35 @@ const Home = () => {
                                         <button
                                             type="button"
                                             onClick={() => actions.addToCart(pizza)}
-                                            disabled={!pizza.available}
+                                            disabled={!pizza.available || pizza.stock === 0}
                                             className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary disabled:cursor-not-allowed disabled:bg-muted/40"
                                         >
-                                            {pizza.available ? 'Agregar al pedido' : 'No disponible'}
+                                            {pizza.available && pizza.stock > 0 ? 'Agregar al pedido' : 'Sin stock'}
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => actions.togglePizzaAvailability(pizza.id, !pizza.available)}
-                                            className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
-                                        >
-                                            {pizza.available ? 'Marcar sin stock' : 'Habilitar pizza'}
-                                        </button>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    actions.updatePizzaInventory(pizza.id, {
+                                                        stock: Math.max(0, pizza.stock - 1),
+                                                    })
+                                                }
+                                                className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
+                                            >
+                                                -1 stock
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    actions.updatePizzaInventory(pizza.id, {
+                                                        stock: pizza.stock + 1,
+                                                    })
+                                                }
+                                                className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
+                                            >
+                                                +1 stock
+                                            </button>
+                                        </div>
                                     </div>
                                 </article>
                             ))
@@ -368,6 +385,45 @@ const Home = () => {
                             </button>
                         </div>
                     </aside>
+
+                    <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-2xl font-semibold text-text">Alertas de stock</h3>
+                                <p className="text-sm text-muted">Productos sin stock o cerca de agotarse.</p>
+                            </div>
+                            <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
+                                {stockAlerts.length}
+                            </span>
+                        </div>
+
+                        <div className="mt-5 space-y-3">
+                            {stockAlerts.length > 0 ? (
+                                stockAlerts.slice(0, 5).map((pizza) => (
+                                    <div key={pizza.id} className="rounded-2xl border border-primary/10 bg-background/60 p-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="font-semibold text-text">{pizza.name}</p>
+                                                <p className="text-sm text-muted">Umbral: {pizza.low_stock_threshold} unidades</p>
+                                            </div>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockBadgeClass(pizza)}`}>
+                                                {getStockLabel(pizza)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-primary/20 bg-background/60 p-5 text-sm text-muted">
+                                    <div className="flex items-center gap-3">
+                                        <span className="rounded-full bg-primary/10 p-3 text-primary">
+                                            <FaStoreSlash />
+                                        </span>
+                                        <span>No hay alertas de stock en este momento.</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
 
                     <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                         <div className="flex items-center justify-between">

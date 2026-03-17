@@ -2,10 +2,13 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { AppContext } from '../store/AppContext';
 import {
     ORDER_STATUS_OPTIONS,
+    buildStockAlerts,
     buildTopProducts,
     buildTreasuryStats,
     formatCurrency,
     getStatusBadgeClass,
+    getStockBadgeClass,
+    getStockLabel,
 } from '../utils/sales';
 
 const SalesHistory = () => {
@@ -14,6 +17,7 @@ const SalesHistory = () => {
 
     useEffect(() => {
         actions.loadSales();
+        actions.loadPizzas();
     }, [actions]);
 
     const filteredDays = useMemo(() => {
@@ -26,6 +30,7 @@ const SalesHistory = () => {
 
     const stats = buildTreasuryStats(filteredDays);
     const topProducts = buildTopProducts(filteredDays).slice(0, 5);
+    const stockAlerts = buildStockAlerts(store.pizzas).slice(0, 6);
     const recentOrders = [...stats.orders]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 8);
@@ -40,7 +45,7 @@ const SalesHistory = () => {
                         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Tesoreria</p>
                         <h2 className="mt-2 text-3xl font-semibold text-text">Seguimiento de ventas y ganancias</h2>
                         <p className="mt-2 max-w-2xl text-sm text-muted">
-                            Consulta pedidos registrados, facturacion, volumen de pizzas y ranking de productos sin salir de la app.
+                            Consulta pedidos registrados, facturacion, volumen de pizzas, ranking y alertas de inventario.
                         </p>
                     </div>
 
@@ -119,6 +124,27 @@ const SalesHistory = () => {
                 </div>
 
                 <div className="space-y-6">
+                    <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <h3 className="text-2xl font-semibold text-text">Alertas de stock</h3>
+                        <div className="mt-5 space-y-3">
+                            {stockAlerts.length > 0 ? (
+                                stockAlerts.map((pizza) => (
+                                    <div key={pizza.id} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
+                                        <div>
+                                            <p className="font-semibold text-text">{pizza.name}</p>
+                                            <p className="text-sm text-muted">Umbral minimo: {pizza.low_stock_threshold}</p>
+                                        </div>
+                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockBadgeClass(pizza)}`}>
+                                            {getStockLabel(pizza)}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted">No hay alertas de stock por ahora.</p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                         <h3 className="text-2xl font-semibold text-text">Productos mas vendidos</h3>
                         <div className="mt-5 space-y-3">

@@ -86,3 +86,32 @@ export const getStatusBadgeClass = (status) => {
             return 'bg-background text-muted';
     }
 };
+
+export const getStockBadgeClass = (pizza) => {
+    if (!pizza.available || pizza.stock === 0) {
+        return 'bg-red-100 text-red-700';
+    }
+
+    if (pizza.stock <= pizza.low_stock_threshold) {
+        return 'bg-accent/15 text-secondary';
+    }
+
+    return 'bg-success/15 text-success';
+};
+
+export const getStockLabel = (pizza) => {
+    if (!pizza.available || pizza.stock === 0) {
+        return 'Sin stock';
+    }
+
+    if (pizza.stock <= pizza.low_stock_threshold) {
+        return `Stock bajo: ${pizza.stock}`;
+    }
+
+    return `Stock: ${pizza.stock}`;
+};
+
+export const buildStockAlerts = (pizzas) =>
+    pizzas
+        .filter((pizza) => !pizza.available || pizza.stock <= pizza.low_stock_threshold)
+        .sort((a, b) => a.stock - b.stock);

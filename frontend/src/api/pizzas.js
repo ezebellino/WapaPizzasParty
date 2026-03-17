@@ -2,8 +2,8 @@ import { apiRequest } from './client';
 
 export const fetchPizzas = () => apiRequest('/pizzas');
 
-export const updatePizzaAvailability = (pizzaId, available) =>
+export const updatePizzaInventory = (pizzaId, payload) =>
     apiRequest(`/pizzas/${pizzaId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ available }),
+        body: JSON.stringify(payload),
     });

@@ -10,10 +10,14 @@ class Pizza(BaseModel):
     description: str = Field(min_length=1)
     price: int = Field(gt=0)
     available: bool = Field(default=True)
+    stock: int = Field(default=0, ge=0)
+    low_stock_threshold: int = Field(default=3, ge=0)
 
 
-class PizzaAvailabilityUpdate(BaseModel):
-    available: bool
+class PizzaInventoryUpdate(BaseModel):
+    available: bool | None = None
+    stock: int | None = Field(default=None, ge=0)
+    low_stock_threshold: int | None = Field(default=None, ge=0)
 
 
 class SaleItem(BaseModel):

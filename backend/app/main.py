@@ -10,7 +10,7 @@ from .schemas import (
     OrderCreate,
     OrderStatusUpdate,
     Pizza,
-    PizzaAvailabilityUpdate,
+    PizzaInventoryUpdate,
     SaleItem,
     SalesDay,
 )
@@ -132,6 +132,32 @@ def save_pizzas(pizzas: list[Pizza]) -> None:
         json.dump([pizza.model_dump() for pizza in pizzas], file, indent=4, ensure_ascii=False)
 
 
+def reduce_stock_for_order(pizzas: list[Pizza], items: list[SaleItem]) -> list[Pizza]:
+    updated_pizzas = pizzas[:]
+
+    for item in items:
+        for index, pizza in enumerate(updated_pizzas):
+            if pizza.id != item.id:
+                continue
+
+            if not pizza.available:
+                raise HTTPException(status_code=400, detail=f'{pizza.name} no esta disponible.')
+
+            if pizza.stock < item.quantity:
+                raise HTTPException(status_code=400, detail=f'Stock insuficiente para {pizza.name}.')
+
+            new_stock = pizza.stock - item.quantity
+            updated_pizzas[index] = pizza.model_copy(
+                update={
+                    'stock': new_stock,
+                    'available': pizza.available and new_stock > 0,
+                }
+            )
+            break
+
+    return updated_pizzas
+
+
 @app.get('/ventas/', response_model=list[SalesDay])
 async def obtener_ventas() -> list[SalesDay]:
     return cargar_ventas()
@@ -149,11 +175,7 @@ async def obtener_ventas_por_fecha(fecha: str) -> SalesDay:
 @app.post('/ventas/')
 async def registrar_venta(venta: OrderCreate):
     pizzas = load_pizzas()
-    unavailable_ids = {pizza.id for pizza in pizzas if not pizza.available}
-
-    if any(item.id in unavailable_ids for item in venta.sales):
-        raise HTTPException(status_code=400, detail='El pedido incluye pizzas no disponibles.')
-
+    updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)
     ventas = cargar_ventas()
     nueva_orden = build_order_from_payload(venta)
     fecha_actual = datetime.now().strftime('%Y-%m-%d')
@@ -163,6 +185,7 @@ async def registrar_venta(venta: OrderCreate):
             dia.orders.append(nueva_orden)
             refresh_sales_day(dia)
             guardar_ventas(ventas)
+            save_pizzas(updated_pizzas)
             return {
                 'message': 'Venta anadida al dia existente.',
                 'order': nueva_orden.model_dump(),
@@ -171,6 +194,7 @@ async def registrar_venta(venta: OrderCreate):
     nuevo_dia = refresh_sales_day(SalesDay(date=fecha_actual, orders=[nueva_orden]))
     ventas.append(nuevo_dia)
     guardar_ventas(ventas)
+    save_pizzas(updated_pizzas)
     return {
         'message': 'Nueva venta registrada.',
         'order': nueva_orden.model_dump(),
@@ -207,14 +231,25 @@ async def get_pizzas() -> list[Pizza]:
 
 
 @app.patch('/pizzas/{pizza_id}', response_model=Pizza)
-async def actualizar_disponibilidad_pizza(pizza_id: int, payload: PizzaAvailabilityUpdate) -> Pizza:
+async def actualizar_inventario_pizza(pizza_id: int, payload: PizzaInventoryUpdate) -> Pizza:
     pizzas = load_pizzas()
 
     for index, pizza in enumerate(pizzas):
-        if pizza.id == pizza_id:
-            updated_pizza = pizza.model_copy(update={'available': payload.available})
-            pizzas[index] = updated_pizza
-            save_pizzas(pizzas)
-            return updated_pizza
+        if pizza.id != pizza_id:
+            continue
+
+        updates = {}
+        if payload.available is not None:
+            updates['available'] = payload.available
+        if payload.stock is not None:
+            updates['stock'] = payload.stock
+            updates['available'] = payload.stock > 0 if payload.available is None else payload.available
+        if payload.low_stock_threshold is not None:
+            updates['low_stock_threshold'] = payload.low_stock_threshold
+
+        updated_pizza = pizza.model_copy(update=updates)
+        pizzas[index] = updated_pizza
+        save_pizzas(pizzas)
+        return updated_pizza
 
     raise HTTPException(status_code=404, detail='No encontramos la pizza solicitada.')

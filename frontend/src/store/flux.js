@@ -1,4 +1,4 @@
-import { fetchPizzas, updatePizzaAvailability } from '../api/pizzas';
+import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
 import { createSale, fetchSales, updateOrderStatus } from '../api/sales';
 
 const resetOrderForm = () => ({
@@ -9,6 +9,21 @@ const resetOrderForm = () => ({
     includeShipping: false,
     shippingCost: 1500,
 });
+
+const syncCartWithPizzas = (cart, pizzas) =>
+    cart
+        .map((item) => {
+            const pizza = pizzas.find((candidate) => candidate.id === item.id);
+            if (!pizza || !pizza.available || pizza.stock === 0) {
+                return null;
+            }
+
+            return {
+                ...item,
+                quantity: Math.min(item.quantity, pizza.stock),
+            };
+        })
+        .filter(Boolean);
 
 const getFlux = (setStore) => ({
     loadSales: async () => {
@@ -48,6 +63,7 @@ const getFlux = (setStore) => ({
                 ...prevStore,
                 pizzas: data,
                 pizzasLoading: false,
+                cart: syncCartWithPizzas(prevStore.cart, data),
             }));
         } catch (error) {
             console.error('Error al cargar pizzas:', error);
@@ -80,16 +96,24 @@ const getFlux = (setStore) => ({
     },
 
     addToCart: (pizza) => {
-        if (!pizza.available) {
+        if (!pizza.available || pizza.stock === 0) {
             setStore((prevStore) => ({
                 ...prevStore,
-                appError: `${pizza.name} no esta disponible en este momento.`,
+                appError: `${pizza.name} no tiene stock disponible.`,
             }));
             return;
         }
 
         setStore((prevStore) => {
             const existingItem = prevStore.cart.find((item) => item.id === pizza.id);
+            const reservedQuantity = existingItem?.quantity ?? 0;
+
+            if (reservedQuantity >= pizza.stock) {
+                return {
+                    ...prevStore,
+                    appError: `No puedes agregar mas de ${pizza.stock} unidades de ${pizza.name}.`,
+                };
+            }
 
             if (existingItem) {
                 return {
@@ -110,12 +134,25 @@ const getFlux = (setStore) => ({
     },
 
     incrementCartItem: (id) => {
-        setStore((prevStore) => ({
-            ...prevStore,
-            cart: prevStore.cart.map((item) =>
-                item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-            ),
-        }));
+        setStore((prevStore) => {
+            const pizza = prevStore.pizzas.find((item) => item.id === id);
+            const cartItem = prevStore.cart.find((item) => item.id === id);
+
+            if (!pizza || !cartItem || cartItem.quantity >= pizza.stock) {
+                return {
+                    ...prevStore,
+                    appError: pizza ? `No hay mas stock para ${pizza.name}.` : prevStore.appError,
+                };
+            }
+
+            return {
+                ...prevStore,
+                appError: null,
+                cart: prevStore.cart.map((item) =>
+                    item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+                ),
+            };
+        });
     },
 
     decrementCartItem: (id) => {
@@ -144,22 +181,26 @@ const getFlux = (setStore) => ({
         }));
     },
 
-    togglePizzaAvailability: async (pizzaId, available) => {
+    updatePizzaInventory: async (pizzaId, payload) => {
         try {
-            const updatedPizza = await updatePizzaAvailability(pizzaId, available);
-            setStore((prevStore) => ({
-                ...prevStore,
-                appError: null,
-                pizzas: prevStore.pizzas.map((pizza) =>
+            const updatedPizza = await updatePizzaInventory(pizzaId, payload);
+            setStore((prevStore) => {
+                const updatedPizzas = prevStore.pizzas.map((pizza) =>
                     pizza.id === pizzaId ? updatedPizza : pizza
-                ),
-                cart: available ? prevStore.cart : prevStore.cart.filter((item) => item.id !== pizzaId),
-            }));
+                );
+
+                return {
+                    ...prevStore,
+                    appError: null,
+                    pizzas: updatedPizzas,
+                    cart: syncCartWithPizzas(prevStore.cart, updatedPizzas),
+                };
+            });
         } catch (error) {
-            console.error('Error al actualizar disponibilidad:', error);
+            console.error('Error al actualizar inventario:', error);
             setStore((prevStore) => ({
                 ...prevStore,
-                appError: 'No pudimos actualizar la disponibilidad de la pizza.',
+                appError: 'No pudimos actualizar el inventario de la pizza.',
             }));
         }
     },
@@ -221,11 +262,12 @@ const getFlux = (setStore) => ({
                 sales: cart,
             });
 
-            const refreshedSales = await fetchSales();
+            const [refreshedSales, refreshedPizzas] = await Promise.all([fetchSales(), fetchPizzas()]);
 
             setStore((prevStore) => ({
                 ...prevStore,
                 sales: refreshedSales,
+                pizzas: refreshedPizzas,
                 cart: [],
                 submittingOrder: false,
                 lastCreatedOrder: response.order,
