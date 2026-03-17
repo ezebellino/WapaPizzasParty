@@ -4,21 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#bd4f2f',
-        secondary: '#803523',
-        accent: '#ddb15a',
-        background: '#f5ede2',
-        surface: '#fffaf3',
-        card: '#fffdf9',
-        text: '#2f241f',
-        muted: '#7f6c62',
+        primary: '#eb0a7c',
+        secondary: '#b10861',
+        accent: '#ffd2e5',
+        background: '#fff5f9',
+        surface: '#fffafc',
+        card: '#fffdfd',
+        text: '#3e2330',
+        muted: '#8c6676',
         success: '#2f7d5b',
       },
       fontFamily: {
         sans: ['Avenir Next', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
-        modern: '0 20px 45px rgba(86, 54, 37, 0.12)',
+        modern: '0 20px 45px rgba(176, 8, 97, 0.14)',
       },
     },
   },

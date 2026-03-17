@@ -78,6 +78,27 @@ const Home = () => {
         }
     };
 
+    const handleMarkReady = async (order) => {
+        const result = await actions.markOrderReady(order.date, order.order_id);
+        if (!result.success) {
+            return;
+        }
+
+        const notificationText =
+            result.notification === 'whatsapp'
+                ? 'Se abrio el WhatsApp con el aviso listo para enviar.'
+                : result.notification === 'vipper'
+                    ? `Llama el vipper ${result.order.vipper_code} para retirar el pedido.`
+                    : 'El pedido quedo marcado como listo para retirar.';
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Pedido listo',
+            text: notificationText,
+            confirmButtonText: 'Continuar',
+        });
+    };
+
     const metricCards = [
         {
             label: 'Pedidos de hoy',
@@ -423,6 +444,15 @@ const Home = () => {
                                                 Enviar WhatsApp
                                             </button>
                                         ) : null}
+                                        {store.lastCreatedOrder.status !== 'listo_para_retirar' && store.lastCreatedOrder.status !== 'entregado' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleMarkReady(store.lastCreatedOrder)}
+                                                className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
+                                            >
+                                                Marcar pedido listo
+                                            </button>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>
@@ -490,6 +520,15 @@ const Home = () => {
                                             </p>
                                         ) : null}
                                         <p className="mt-3 text-sm font-medium text-text">{formatCurrency(order.total)}</p>
+                                        {order.status !== 'listo_para_retirar' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleMarkReady(order)}
+                                                className="mt-3 rounded-2xl border border-primary/15 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-secondary hover:border-primary hover:text-primary"
+                                            >
+                                                Pedido listo
+                                            </button>
+                                        ) : null}
                                     </div>
                                 ))
                             ) : (

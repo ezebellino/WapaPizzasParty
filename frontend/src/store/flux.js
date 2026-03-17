@@ -60,6 +60,14 @@ const clearSessionStorage = (storageKey) => {
     window.localStorage.removeItem(storageKey);
 };
 
+const mergeUpdatedOrderIntoSales = (sales, date, updatedOrder) =>
+    sales.map((day) => ({
+        ...day,
+        orders: day.date === date
+            ? day.orders.map((order) => (order.order_id === updatedOrder.order_id ? updatedOrder : order))
+            : day.orders,
+    }));
+
 const getFlux = (setStore, getStore, storageKey) => ({
     login: async ({ username, password }) => {
         try {
@@ -319,14 +327,12 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: null,
-                sales: prevStore.sales.map((day) => ({
-                    ...day,
-                    orders: day.date === date
-                        ? day.orders.map((order) => (order.order_id === orderId ? response.order : order))
-                        : day.orders,
-                })),
+                sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, response.order),
+                lastCreatedOrder: prevStore.lastCreatedOrder?.order_id === orderId
+                    ? response.order
+                    : prevStore.lastCreatedOrder,
             }));
-            return { success: true };
+            return { success: true, order: response.order };
         } catch (error) {
             console.error('Error al actualizar estado del pedido:', error);
             setStore((prevStore) => ({
@@ -354,6 +360,54 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: error.message || 'No pudimos abrir el comprobante de WhatsApp.',
+            }));
+            return { success: false };
+        }
+    },
+
+    markOrderReady: async (date, orderId) => {
+        try {
+            const statusResponse = await updateOrderStatus(date, orderId, 'listo_para_retirar');
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, statusResponse.order),
+                lastCreatedOrder: prevStore.lastCreatedOrder?.order_id === orderId
+                    ? statusResponse.order
+                    : prevStore.lastCreatedOrder,
+            }));
+
+            if (statusResponse.order.notify_whatsapp && statusResponse.order.receiver_phone) {
+                const whatsappResponse = await fetchOrderWhatsAppLink(date, orderId);
+                if (typeof window !== 'undefined') {
+                    window.open(whatsappResponse.url, '_blank', 'noopener,noreferrer');
+                }
+
+                return {
+                    success: true,
+                    notification: 'whatsapp',
+                    order: statusResponse.order,
+                };
+            }
+
+            if (statusResponse.order.use_vipper && statusResponse.order.vipper_code) {
+                return {
+                    success: true,
+                    notification: 'vipper',
+                    order: statusResponse.order,
+                };
+            }
+
+            return {
+                success: true,
+                notification: 'none',
+                order: statusResponse.order,
+            };
+        } catch (error) {
+            console.error('Error al marcar el pedido como listo:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos marcar el pedido como listo.',
             }));
             return { success: false };
         }

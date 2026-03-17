@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-    color: #2f241f;
+    color: #3e2330;
     background:
-        linear-gradient(rgba(255, 249, 241, 0.9), rgba(245, 237, 226, 0.92)),
+        linear-gradient(rgba(255, 245, 249, 0.92), rgba(255, 250, 252, 0.94)),
         url('../assets/FondoWapaPizzaParty.jpeg');
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -30,8 +30,8 @@ body {
 #root {
     min-height: 100vh;
     background:
-        radial-gradient(circle at top left, rgba(245, 0, 126, 0.08), transparent 22%),
-        radial-gradient(circle at bottom right, rgba(189, 79, 47, 0.08), transparent 20%);
+        radial-gradient(circle at top left, rgba(235, 10, 124, 0.12), transparent 22%),
+        radial-gradient(circle at bottom right, rgba(177, 8, 97, 0.1), transparent 20%);
 }
 
 a {
