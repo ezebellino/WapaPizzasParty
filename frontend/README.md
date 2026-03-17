@@ -28,6 +28,7 @@ Todavia esta en etapa de consolidacion y forma parte del plan de refactor genera
 ```text
 frontend/
 |- src/
+|  |- api/
 |  |- components/
 |  |- pages/
 |  |- store/
@@ -73,12 +74,12 @@ Endpoints usados hoy:
 ## Deuda tecnica actual
 
 - Conviven estilos de distinta estrategia y falta unificar criterios.
-- Parte de la estructura proviene de una plantilla inicial.
-- Las llamadas a la API todavia estan acopladas a la capa de store.
-- Faltan estados de error y carga mas consistentes.
+- La persistencia sigue basada en JSON de backend.
+- Faltan estados mas completos para venta, carrito e historial.
+- El siguiente paso es reforzar contratos y validaciones del dominio.
 
 ## Proximo foco
 
-- mover llamadas HTTP a una capa dedicada,
+- reforzar contratos entre frontend y backend,
 - ordenar componentes y estilos,
-- y alinear mejor este frontend con el dominio real de gestion de la pizzeria.
+- y sumar mejoras reales de gestion sobre una base mas limpia.

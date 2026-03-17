@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
-import { AppContext } from '../store/AppContext';
 import Swal from 'sweetalert2';
+import { AppContext } from '../store/AppContext';
 
 const Cart = () => {
     const { store, actions } = useContext(AppContext);
@@ -11,36 +11,41 @@ const Cart = () => {
     );
 
     const handleConfirmSale = async () => {
+        if (store.cart.length === 0) {
+            Swal.fire('Carrito vacio', 'Agrega al menos una pizza antes de confirmar la venta.', 'info');
+            return;
+        }
+
         const confirmed = await Swal.fire({
-            title: "Confirmar venta",
-            text: "¿Desea confirmar esta venta?",
-            icon: "question",
+            title: 'Confirmar venta',
+            text: 'Desea confirmar esta venta?',
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: "Sí, confirmar",
-            cancelButtonText: "Cancelar",
+            confirmButtonText: 'Si, confirmar',
+            cancelButtonText: 'Cancelar',
         });
 
         if (confirmed.isConfirmed) {
             const success = await actions.confirmarVenta();
             if (success) {
-                Swal.fire("¡Venta confirmada!", "La venta ha sido registrada.", "success");
+                Swal.fire('Venta confirmada', 'La venta ha sido registrada.', 'success');
             } else {
-                Swal.fire("Error", "No se pudo registrar la venta.", "error");
+                Swal.fire('Error', store.appError ?? 'No se pudo registrar la venta.', 'error');
             }
         }
     };
 
     useEffect(() => {
-        console.log("Carrito actualizado:", store.cart);
+        console.log('Carrito actualizado:', store.cart);
     }, [store.cart]);
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4 text-center">Carrito</h1>
+            <h1 className="mb-4 text-center text-2xl font-bold">Carrito</h1>
             <ul className="space-y-4">
                 {store.cart.length > 0 ? (
                     store.cart.map((item) => (
-                        <li key={item.id} className="flex justify-between items-center mb-2 border-b pb-2">
+                        <li key={item.id} className="mb-2 flex items-center justify-between border-b pb-2">
                             <div>
                                 <p className="font-bold">{item.name}</p>
                                 <label>
@@ -50,13 +55,13 @@ const Cart = () => {
                                         min="1"
                                         value={item.quantity}
                                         onChange={(e) => actions.updateCartQuantity(item.id, e.target.value)}
-                                        className="border rounded p-2 ml-2 w-20 text-white bg-black text-center"
+                                        className="ml-2 w-20 rounded border bg-black p-2 text-center text-white"
                                     />
                                 </label>
                             </div>
                             <span>${item.price * item.quantity}</span>
                             <button
-                                className="bg-red-500 text-white px-2 py-1 rounded text-center"
+                                className="rounded bg-red-500 px-2 py-1 text-center text-white"
                                 onClick={() => actions.removeToCart(item.id)}
                             >
                                 Eliminar
@@ -64,7 +69,7 @@ const Cart = () => {
                         </li>
                     ))
                 ) : (
-                    <p className="text-center text-gray-500">El carrito está vacío.</p>
+                    <p className="text-center text-gray-500">El carrito esta vacio.</p>
                 )}
             </ul>
             <div className="mt-4">
@@ -75,15 +80,12 @@ const Cart = () => {
                         onChange={actions.toggleShipping}
                         className="mr-2"
                     />
-                    Incluir envío (+$1000)
+                    Incluir envio (+$1000)
                 </label>
                 <div className="mt-4 font-bold">Total: ${total}</div>
             </div>
-            <button
-                className="bg-green-400 text-white px-4 py-2 rounded mt-4"
-                onClick={handleConfirmSale}
-            >
-                Confirmar Venta
+            <button className="mt-4 rounded bg-green-400 px-4 py-2 text-white" onClick={handleConfirmSale}>
+                Confirmar venta
             </button>
         </div>
     );

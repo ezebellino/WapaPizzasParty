@@ -1,26 +1,44 @@
+import { fetchPizzas } from '../api/pizzas';
+import { createSale, fetchSales, fetchSalesByDate } from '../api/sales';
+
 const getFlux = (setStore) => ({
     loadSales: async () => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            salesLoading: true,
+            appError: null,
+        }));
+
         try {
-            const response = await fetch("http://127.0.0.1:8000/ventas/");
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            setStore((prevStore) => ({ ...prevStore, sales: data }));
+            const data = await fetchSales();
+            setStore((prevStore) => ({
+                ...prevStore,
+                sales: data,
+                salesLoading: false,
+            }));
         } catch (error) {
-            console.error("Error al cargar ventas:", error);
+            console.error('Error al cargar ventas:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                salesLoading: false,
+                appError: 'No pudimos cargar el historial de ventas.',
+            }));
         }
     },
 
     getSalesByDate: async (date) => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/ventas/${date}`);
-            if (response.ok) {
-                return await response.json();
-            }
-            return null;
+            return await fetchSalesByDate(date);
         } catch (error) {
-            console.error("Error al obtener ventas:", error);
+            if (error.message.includes('404')) {
+                return null;
+            }
+
+            console.error('Error al obtener ventas:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: 'No pudimos consultar las ventas para esa fecha.',
+            }));
             return null;
         }
     },
@@ -34,47 +52,59 @@ const getFlux = (setStore) => ({
                 });
             });
 
+            if (snapshot.cart.length === 0) {
+                return false;
+            }
+
             const totalRevenue = snapshot.cart.reduce(
                 (sum, item) => sum + item.price * item.quantity,
                 snapshot.includeShipping ? 1000 : 0
             );
 
-            const response = await fetch("http://127.0.0.1:8000/ventas/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    sales: snapshot.cart,
-                    total_revenue: totalRevenue,
-                }),
+            await createSale({
+                sales: snapshot.cart,
+                total_revenue: totalRevenue,
             });
-
-            if (!response.ok) {
-                throw new Error("Error al registrar la venta");
-            }
 
             setStore((prevStore) => ({
                 ...prevStore,
                 cart: [],
                 includeShipping: false,
+                appError: null,
             }));
 
             return true;
         } catch (error) {
-            console.error("Error al registrar la venta:", error);
+            console.error('Error al registrar la venta:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: 'No pudimos registrar la venta.',
+            }));
             return false;
         }
     },
 
     loadPizzas: async () => {
+        setStore((prevStore) => ({
+            ...prevStore,
+            pizzasLoading: true,
+            appError: null,
+        }));
+
         try {
-            const response = await fetch("http://127.0.0.1:8000/pizzas");
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const data = await response.json();
-            setStore((prevStore) => ({ ...prevStore, pizzas: data }));
+            const data = await fetchPizzas();
+            setStore((prevStore) => ({
+                ...prevStore,
+                pizzas: data,
+                pizzasLoading: false,
+            }));
         } catch (error) {
-            console.error("Error al cargar pizzas:", error);
+            console.error('Error al cargar pizzas:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                pizzasLoading: false,
+                appError: 'No pudimos cargar el menu de pizzas.',
+            }));
         }
     },
 

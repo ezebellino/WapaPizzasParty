@@ -7,21 +7,22 @@ const AboutUs = () => {
         <div className={styles.container}>
             <h2 className={styles.title}>Nuestra Historia</h2>
             <p className={styles.description}>
-                En Wapa Pizza Party, llevamos más de 15 años creando momentos únicos con nuestras exquisitas pizzas.
-                Nuestra pasión por la calidad y el sabor nos ha convertido en una tradición para los amantes de la pizza.<br />
-                Fundada por Sole Moran, Profesional Gastronómico #IAG, Wapa Pizza Party no tiene un local físico,
-                pero cada fin de semana estamos presentes en los mejores eventos. <br />
-                Desde cumpleaños hasta reuniones empresariales, nuestro servicio se adapta a cualquier tipo de festejo.
-                ¡Vos poné el lugar, nosotros nos ocupamos del resto! <span className={styles.slogan}>#PizzaParty #ListasParaHornear</span><br />
-                No importa la ocasión, cada bocado de nuestras pizzas está pensado para conquistar tus sentidos. <br />
-                Así que, ¿qué esperás? ¡Probá nuestras pizzas y convertí tu próximo evento en una experiencia inolvidable!
+                En Wapa Pizza Party, llevamos mas de 15 anos creando momentos unicos con nuestras pizzas.
+                Nuestra pasion por la calidad y el sabor nos convirtio en una tradicion para quienes aman compartir una buena pizza.
+                <br />
+                Fundada por Sole Moran, profesional gastronomica del IAG, Wapa Pizza Party no tiene un local fisico,
+                pero cada fin de semana estamos presentes en los mejores eventos.
+                <br />
+                Desde cumpleanos hasta reuniones empresariales, nuestro servicio se adapta a cualquier tipo de festejo.
+                Vos pone el lugar, nosotros nos ocupamos del resto. <span className={styles.slogan}>#PizzaParty #ListasParaHornear</span>
+                <br />
+                No importa la ocasion, cada bocado de nuestras pizzas esta pensado para conquistar tus sentidos.
+                <br />
+                Proba nuestras pizzas y converti tu proximo evento en una experiencia inolvidable.
             </p>
-            <h3 className={styles.contactTitle}>Contáctanos al:</h3>
+            <h3 className={styles.contactTitle}>Contactanos en:</h3>
             <div className={styles.contact}>
-                <a
-                    href="tel:2245509530"
-                    className={styles.iconLink}
-                >
+                <a href="tel:2245509530" className={styles.iconLink}>
                     <FaPhoneAlt className={styles.icon} />
                     <span className={styles.text}>2245509530</span>
                 </a>

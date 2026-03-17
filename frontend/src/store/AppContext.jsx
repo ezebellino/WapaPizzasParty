@@ -9,6 +9,9 @@ const AppProvider = ({ children }) => {
         cart: [],
         includeShipping: false,
         sales: [],
+        pizzasLoading: false,
+        salesLoading: false,
+        appError: null,
     });
 
     const [actions] = useState(getFlux(setStore));

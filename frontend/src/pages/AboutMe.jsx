@@ -1,18 +1,19 @@
 import React from 'react';
-import styles from '../styles/AboutMe.module.css';
 import { FaLinkedin, FaInstagram, FaGithub, FaWhatsapp } from 'react-icons/fa';
-import ZeqeIMG from "../img/ZeqeGitHub.png";
+import ZeqeIMG from '../img/ZeqeGitHub.png';
+import styles from '../styles/AboutMe.module.css';
 
 const AboutMe = () => {
     return (
         <div className={styles.container}>
-            <h1 className={styles.title}>Sobre Mí</h1>
+            <h1 className={styles.title}>Sobre mi</h1>
             <div className={styles.imgContainer}>
-                <img src={ZeqeIMG} alt='ZeqeDev' className={styles.profileImage} />
+                <img src={ZeqeIMG} alt="ZeqeDev" className={styles.profileImage} />
             </div>
             <p className={styles.description}>
-                ¡Hola! Soy Zeqe, desarrollador Full Stack con pasión por la tecnología, la programación y la innovación. <br />
-                Aquí puedes encontrarme en mis redes sociales:
+                Hola, soy Zeqe, desarrollador full stack con pasion por la tecnologia, la programacion y la innovacion.
+                <br />
+                Aca podes encontrarme en mis redes sociales:
             </p>
             <div className={styles.socialLinks}>
                 <a href="https://www.linkedin.com/in/ezebellino" target="_blank" rel="noopener noreferrer" className={styles.link}>
