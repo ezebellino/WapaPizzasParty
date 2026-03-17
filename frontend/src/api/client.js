@@ -33,7 +33,18 @@ export const apiRequest = async (path, options = {}) => {
     });
 
     if (!response.ok) {
-        throw new Error(`La API respondio con estado ${response.status}.`);
+        let detail = `La API respondio con estado ${response.status}.`;
+
+        try {
+            const errorPayload = await response.json();
+            if (typeof errorPayload?.detail === 'string' && errorPayload.detail.trim()) {
+                detail = errorPayload.detail;
+            }
+        } catch {
+            // Conservamos el mensaje por estado cuando no llega un JSON valido.
+        }
+
+        throw new Error(detail);
     }
 
     if (response.status === 204) {

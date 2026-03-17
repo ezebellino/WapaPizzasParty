@@ -9,6 +9,9 @@ import {
     buildTreasuryStats,
     downloadTreasuryCsv,
     formatCurrency,
+    formatPizzaQuantity,
+    formatSaleItemLabel,
+    formatStockValue,
     getStatusBadgeClass,
     getStockBadgeClass,
     getStockLabel,
@@ -81,7 +84,7 @@ const SalesHistory = () => {
                     </div>
                     <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
                         <p className="text-sm text-muted">Pizzas vendidas</p>
-                        <p className="mt-2 text-3xl font-semibold text-text">{stats.totalPizzas}</p>
+                        <p className="mt-2 text-3xl font-semibold text-text">{formatPizzaQuantity(stats.totalPizzas)}</p>
                     </div>
                     <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
                         <p className="text-sm text-muted">Facturacion</p>
@@ -128,7 +131,7 @@ const SalesHistory = () => {
                                         <tr key={day.date}>
                                             <td className="px-4 py-3 font-medium text-text">{day.date}</td>
                                             <td className="px-4 py-3 text-muted">{day.order_count}</td>
-                                            <td className="px-4 py-3 text-muted">{day.total_pizzas}</td>
+                                            <td className="px-4 py-3 text-muted">{formatPizzaQuantity(day.total_pizzas)}</td>
                                             <td className="px-4 py-3 font-semibold text-text">{formatCurrency(day.total_revenue)}</td>
                                         </tr>
                                     ))
@@ -186,7 +189,7 @@ const SalesHistory = () => {
                                     <div key={pizza.id} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
                                         <div>
                                             <p className="font-semibold text-text">{pizza.name}</p>
-                                            <p className="text-sm text-muted">Umbral minimo: {pizza.low_stock_threshold}</p>
+                                            <p className="text-sm text-muted">Umbral minimo: {formatStockValue(pizza.low_stock_threshold)} pizzas</p>
                                         </div>
                                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockBadgeClass(pizza)}`}>
                                             {getStockLabel(pizza)}
@@ -210,7 +213,7 @@ const SalesHistory = () => {
                                             <p className="font-semibold text-text">{product.name}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-text">{product.quantity} pizzas</p>
+                                            <p className="font-semibold text-text">{formatPizzaQuantity(product.quantity)}</p>
                                             <p className="text-sm text-muted">{formatCurrency(product.revenue)}</p>
                                         </div>
                                     </div>
@@ -231,6 +234,11 @@ const SalesHistory = () => {
                                             <div>
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
                                                 <p className="text-sm text-muted">{order.date} - {order.payment_method}</p>
+                                                {order.notify_whatsapp ? (
+                                                    <p className="mt-1 text-xs uppercase tracking-wide text-muted">
+                                                        WhatsApp: {order.whatsapp_notification_status}
+                                                    </p>
+                                                ) : null}
                                             </div>
                                             <div className="text-right">
                                                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
@@ -242,7 +250,7 @@ const SalesHistory = () => {
 
                                         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <p className="text-sm text-muted">
-                                                {order.sales.reduce((sum, item) => sum + item.quantity, 0)} pizzas - {order.include_shipping ? 'con envio' : 'sin envio'}
+                                                {order.sales.map((item) => formatSaleItemLabel(item)).join(' + ')} - {order.include_shipping ? 'con envio' : 'sin envio'}
                                             </p>
                                             <select
                                                 value={order.status}

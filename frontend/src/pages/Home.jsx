@@ -11,6 +11,9 @@ import {
     calculateCartSubtotal,
     calculateCartTotal,
     formatCurrency,
+    formatPizzaQuantity,
+    formatSaleItemLabel,
+    formatStockValue,
     getStatusBadgeClass,
     getStockBadgeClass,
     getStockLabel,
@@ -74,7 +77,7 @@ const Home = () => {
         },
         {
             label: 'Pizzas vendidas hoy',
-            value: todaySales?.total_pizzas ?? 0,
+            value: formatPizzaQuantity(todaySales?.total_pizzas ?? 0),
             helper: 'Produccion acumulada del dia',
         },
         {
@@ -93,12 +96,12 @@ const Home = () => {
                             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Mostrador</p>
                             <h2 className="mt-2 text-3xl font-semibold text-text">Carga rapida de pedidos</h2>
                             <p className="mt-2 max-w-2xl text-sm text-muted">
-                                Toma pedidos rapido, calcula el total automaticamente y controla pedidos y stock en una sola vista.
+                                Carga medias pizzas, arma combinaciones mitad y mitad, calcula el total automaticamente y controla pedidos y stock en una sola vista.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-secondary">
                             <p className="font-semibold">Pedido actual</p>
-                            <p>{pizzasCount} pizzas - {formatCurrency(total)}</p>
+                            <p>{formatPizzaQuantity(pizzasCount)} - {formatCurrency(total)}</p>
                         </div>
                     </div>
 
@@ -131,7 +134,7 @@ const Home = () => {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <h3 className="text-2xl font-semibold text-text">Catalogo de pizzas</h3>
-                            <p className="text-sm text-muted">Busca rapido, controla stock y agrega al pedido.</p>
+                            <p className="text-sm text-muted">Busca rapido, controla stock y agrega medias pizzas al pedido.</p>
                         </div>
                         <input
                             type="search"
@@ -164,6 +167,9 @@ const Home = () => {
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-sm leading-6 text-muted">{pizza.description}</p>
+                                            <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">
+                                                Se agrega de a 1/2 pizza. Puedes combinar sabores en un mismo pedido.
+                                            </p>
                                         </div>
                                         <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                                             {formatCurrency(pizza.price)}
@@ -177,30 +183,30 @@ const Home = () => {
                                             disabled={!pizza.available || pizza.stock === 0}
                                             className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary disabled:cursor-not-allowed disabled:bg-muted/40"
                                         >
-                                            {pizza.available && pizza.stock > 0 ? 'Agregar al pedido' : 'Sin stock'}
+                                            {pizza.available && pizza.stock > 0 ? 'Agregar 1/2 pizza' : 'Sin stock'}
                                         </button>
                                         <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() =>
                                                     actions.updatePizzaInventory(pizza.id, {
-                                                        stock: Math.max(0, pizza.stock - 1),
+                                                        stock: Math.max(0, pizza.stock - 0.5),
                                                     })
                                                 }
                                                 className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
                                             >
-                                                -1 stock
+                                                -1/2 stock
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() =>
                                                     actions.updatePizzaInventory(pizza.id, {
-                                                        stock: pizza.stock + 1,
+                                                        stock: pizza.stock + 0.5,
                                                     })
                                                 }
                                                 className="rounded-2xl border border-primary/15 bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary"
                                             >
-                                                +1 stock
+                                                +1/2 stock
                                             </button>
                                         </div>
                                     </div>
@@ -239,6 +245,15 @@ const Home = () => {
                                 onChange={(event) => actions.setOrderField('receiverPhone', event.target.value)}
                                 className="w-full rounded-2xl border border-primary/15 bg-background px-4 py-3 text-sm text-text outline-none transition focus:border-primary"
                             />
+                            <label className="flex items-center justify-between rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm text-text">
+                                <span className="font-medium">Avisar por WhatsApp segun el estado del pedido</span>
+                                <input
+                                    type="checkbox"
+                                    checked={store.orderForm.notifyWhatsApp}
+                                    onChange={(event) => actions.setOrderField('notifyWhatsApp', event.target.checked)}
+                                    className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary"
+                                />
+                            </label>
                             <select
                                 value={store.orderForm.paymentMethod}
                                 onChange={(event) => actions.setOrderField('paymentMethod', event.target.value)}
@@ -287,7 +302,7 @@ const Home = () => {
                         <div className="mt-6 space-y-3">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-lg font-semibold text-text">Detalle</h4>
-                                <span className="text-sm text-muted">{pizzasCount} pizzas</span>
+                                <span className="text-sm text-muted">{formatPizzaQuantity(pizzasCount)}</span>
                             </div>
 
                             <div className="max-h-80 space-y-3 overflow-auto pr-1">
@@ -296,8 +311,8 @@ const Home = () => {
                                         <div key={item.id} className="rounded-2xl border border-primary/10 bg-background/70 p-4">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
-                                                    <p className="font-semibold text-text">{item.name}</p>
-                                                    <p className="text-sm text-muted">{formatCurrency(item.price)} por unidad</p>
+                                                    <p className="font-semibold text-text">{formatSaleItemLabel(item)}</p>
+                                                    <p className="text-sm text-muted">{formatCurrency(item.price)} por pizza completa</p>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -317,7 +332,7 @@ const Home = () => {
                                                     >
                                                         <FaMinus />
                                                     </button>
-                                                    <span className="min-w-8 text-center font-semibold text-text">{item.quantity}</span>
+                                                    <span className="min-w-16 text-center font-semibold text-text">{formatPizzaQuantity(item.quantity)}</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => actions.incrementCartItem(item.id)}
@@ -334,7 +349,7 @@ const Home = () => {
                                     ))
                                 ) : (
                                     <div className="rounded-2xl border border-dashed border-primary/20 bg-background/60 p-5 text-sm text-muted">
-                                        Agrega pizzas desde el catalogo para empezar a cargar el pedido.
+                                        Agrega medias pizzas desde el catalogo para empezar a cargar el pedido.
                                     </div>
                                 )}
                             </div>
@@ -404,7 +419,7 @@ const Home = () => {
                                         <div className="flex items-center justify-between gap-3">
                                             <div>
                                                 <p className="font-semibold text-text">{pizza.name}</p>
-                                                <p className="text-sm text-muted">Umbral: {pizza.low_stock_threshold} unidades</p>
+                                                <p className="text-sm text-muted">Umbral: {formatStockValue(pizza.low_stock_threshold)} pizzas</p>
                                             </div>
                                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockBadgeClass(pizza)}`}>
                                                 {getStockLabel(pizza)}
@@ -429,7 +444,7 @@ const Home = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-2xl font-semibold text-text">Pedidos activos</h3>
-                                <p className="text-sm text-muted">Pendientes o en preparacion para seguimiento rapido.</p>
+                                <p className="text-sm text-muted">Procesados, en preparacion o listos para retirar.</p>
                             </div>
                             <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
                                 {openOrders.length}
@@ -444,13 +459,18 @@ const Home = () => {
                                             <div>
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
                                                 <p className="text-sm text-muted">
-                                                    {order.date} - {order.sales.reduce((sum, item) => sum + item.quantity, 0)} pizzas
+                                                    {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
                                                 </p>
                                             </div>
                                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
                                                 {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
                                             </span>
                                         </div>
+                                        {order.notify_whatsapp ? (
+                                            <p className="mt-2 text-xs uppercase tracking-wide text-muted">
+                                                Aviso por WhatsApp preparado
+                                            </p>
+                                        ) : null}
                                         <p className="mt-3 text-sm font-medium text-text">{formatCurrency(order.total)}</p>
                                     </div>
                                 ))

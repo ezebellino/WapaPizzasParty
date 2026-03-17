@@ -1,8 +1,21 @@
 from pydantic import BaseModel, Field, field_validator
 
 
-ORDER_STATUSES = {'pendiente', 'en_preparacion', 'entregado', 'cancelado'}
+ORDER_STATUSES = {'procesado', 'en_preparacion', 'listo_para_retirar', 'entregado', 'cancelado'}
 USER_ROLES = {'admin', 'operator'}
+
+
+def normalize_half_step(value: float, *, allow_zero: bool = False) -> float:
+    normalized = round(float(value) * 2) / 2
+    minimum = 0 if allow_zero else 0.5
+
+    if normalized < minimum or abs(normalized - float(value)) > 1e-9:
+        step_label = '0.5'
+        if allow_zero:
+            raise ValueError(f'El valor debe ser mayor o igual a 0 y avanzar en pasos de {step_label}.')
+        raise ValueError(f'El valor debe ser mayor o igual a {step_label} y avanzar en pasos de {step_label}.')
+
+    return normalized
 
 
 class User(BaseModel):
@@ -46,14 +59,26 @@ class Pizza(BaseModel):
     description: str = Field(min_length=1)
     price: int = Field(gt=0)
     available: bool = Field(default=True)
-    stock: int = Field(default=0, ge=0)
-    low_stock_threshold: int = Field(default=3, ge=0)
+    stock: float = Field(default=0, ge=0)
+    low_stock_threshold: float = Field(default=3, ge=0)
+
+    @field_validator('stock', 'low_stock_threshold')
+    @classmethod
+    def validate_stock_values(cls, value: float) -> float:
+        return normalize_half_step(value, allow_zero=True)
 
 
 class PizzaInventoryUpdate(BaseModel):
     available: bool | None = None
-    stock: int | None = Field(default=None, ge=0)
-    low_stock_threshold: int | None = Field(default=None, ge=0)
+    stock: float | None = Field(default=None, ge=0)
+    low_stock_threshold: float | None = Field(default=None, ge=0)
+
+    @field_validator('stock', 'low_stock_threshold')
+    @classmethod
+    def validate_stock_values(cls, value: float | None) -> float | None:
+        if value is None:
+            return value
+        return normalize_half_step(value, allow_zero=True)
 
 
 class SaleItem(BaseModel):
@@ -61,7 +86,12 @@ class SaleItem(BaseModel):
     name: str = Field(min_length=1)
     description: str = Field(default='')
     price: int = Field(gt=0)
-    quantity: int = Field(gt=0)
+    quantity: float = Field(gt=0)
+
+    @field_validator('quantity')
+    @classmethod
+    def validate_quantity(cls, value: float) -> float:
+        return normalize_half_step(value)
 
 
 class OrderBase(BaseModel):
@@ -71,6 +101,7 @@ class OrderBase(BaseModel):
     notes: str = Field(default='')
     include_shipping: bool = Field(default=False)
     shipping_cost: int = Field(default=0, ge=0)
+    notify_whatsapp: bool = Field(default=False)
     sales: list[SaleItem] = Field(min_length=1)
 
     @field_validator('sales')
@@ -79,6 +110,16 @@ class OrderBase(BaseModel):
         if not sales:
             raise ValueError('La venta debe incluir al menos un producto.')
         return sales
+
+    @field_validator('receiver_phone')
+    @classmethod
+    def normalize_phone(cls, phone: str) -> str:
+        return phone.strip()
+
+    @field_validator('notes')
+    @classmethod
+    def normalize_notes(cls, notes: str) -> str:
+        return notes.strip()
 
 
 class OrderCreate(OrderBase):
@@ -100,9 +141,10 @@ class OrderStatusUpdate(BaseModel):
 class Order(OrderBase):
     order_id: str
     created_at: str
-    status: str = Field(default='pendiente')
+    status: str = Field(default='procesado')
     subtotal: int = Field(ge=0)
     total: int = Field(ge=0)
+    whatsapp_notification_status: str = Field(default='pendiente')
 
     @field_validator('status')
     @classmethod
@@ -117,5 +159,5 @@ class SalesDay(BaseModel):
     date: str
     orders: list[Order] = Field(default_factory=list)
     total_revenue: int = Field(default=0, ge=0)
-    total_pizzas: int = Field(default=0, ge=0)
+    total_pizzas: float = Field(default=0, ge=0)
     order_count: int = Field(default=0, ge=0)

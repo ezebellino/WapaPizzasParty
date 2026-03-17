@@ -1,6 +1,9 @@
+export const HALF_PIZZA_STEP = 0.5;
+
 export const ORDER_STATUS_OPTIONS = [
-    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'procesado', label: 'Procesado' },
     { value: 'en_preparacion', label: 'En preparacion' },
+    { value: 'listo_para_retirar', label: 'Listo para retirar' },
     { value: 'entregado', label: 'Entregado' },
     { value: 'cancelado', label: 'Cancelado' },
 ];
@@ -12,11 +15,37 @@ export const formatCurrency = (value) =>
         maximumFractionDigits: 0,
     }).format(value || 0);
 
+const normalizeHalfStep = (value) => Math.round((Number(value) || 0) * 2) / 2;
+
+export const formatStockValue = (value) => {
+    const normalized = normalizeHalfStep(value);
+    return Number.isInteger(normalized) ? `${normalized}` : normalized.toFixed(1).replace('.', ',');
+};
+
+export const formatPizzaQuantity = (value) => {
+    const normalized = normalizeHalfStep(value);
+    const halves = Math.round(normalized * 2);
+    const fullPizzas = Math.floor(halves / 2);
+    const hasHalf = halves % 2 === 1;
+
+    if (fullPizzas === 0 && hasHalf) {
+        return '1/2 pizza';
+    }
+
+    if (hasHalf) {
+        return `${fullPizzas} 1/2 pizzas`;
+    }
+
+    return `${fullPizzas} ${fullPizzas === 1 ? 'pizza' : 'pizzas'}`;
+};
+
+export const formatSaleItemLabel = (item) => `${formatPizzaQuantity(item.quantity)} de ${item.name}`;
+
 export const calculateCartSubtotal = (cart) =>
-    cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    Math.round(cart.reduce((sum, item) => sum + item.price * item.quantity, 0));
 
 export const calculateCartPizzas = (cart) =>
-    cart.reduce((sum, item) => sum + item.quantity, 0);
+    normalizeHalfStep(cart.reduce((sum, item) => sum + item.quantity, 0));
 
 export const calculateCartTotal = (cart, includeShipping, shippingCost) =>
     calculateCartSubtotal(cart) + (includeShipping ? shippingCost : 0);
@@ -32,7 +61,7 @@ export const flattenOrders = (salesDays) =>
 export const buildTreasuryStats = (salesDays) => {
     const orders = flattenOrders(salesDays);
     const totalRevenue = salesDays.reduce((sum, day) => sum + day.total_revenue, 0);
-    const totalPizzas = salesDays.reduce((sum, day) => sum + day.total_pizzas, 0);
+    const totalPizzas = normalizeHalfStep(salesDays.reduce((sum, day) => sum + day.total_pizzas, 0));
     const totalOrders = salesDays.reduce((sum, day) => sum + day.order_count, 0);
     const bestDay = [...salesDays].sort((a, b) => b.total_revenue - a.total_revenue)[0] ?? null;
 
@@ -59,8 +88,8 @@ export const buildTopProducts = (salesDays) => {
                     revenue: 0,
                 };
 
-                current.quantity += item.quantity;
-                current.revenue += item.price * item.quantity;
+                current.quantity = normalizeHalfStep(current.quantity + item.quantity);
+                current.revenue += Math.round(item.price * item.quantity);
                 ranking.set(item.id, current);
             });
         });
@@ -71,7 +100,11 @@ export const buildTopProducts = (salesDays) => {
 
 export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
-        .filter((order) => order.status === 'pendiente' || order.status === 'en_preparacion')
+        .filter((order) =>
+            order.status === 'procesado'
+            || order.status === 'en_preparacion'
+            || order.status === 'listo_para_retirar'
+        )
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
 export const buildPaymentBreakdown = (salesDays) => {
@@ -116,12 +149,14 @@ export const buildStatusBreakdown = (salesDays) => {
 
 export const getStatusBadgeClass = (status) => {
     switch (status) {
-        case 'pendiente':
+        case 'procesado':
             return 'bg-accent/15 text-secondary';
         case 'en_preparacion':
             return 'bg-primary/15 text-primary';
-        case 'entregado':
+        case 'listo_para_retirar':
             return 'bg-success/15 text-success';
+        case 'entregado':
+            return 'bg-emerald-100 text-emerald-700';
         case 'cancelado':
             return 'bg-red-100 text-red-700';
         default:
@@ -147,10 +182,10 @@ export const getStockLabel = (pizza) => {
     }
 
     if (pizza.stock <= pizza.low_stock_threshold) {
-        return `Stock bajo: ${pizza.stock}`;
+        return `Stock bajo: ${formatStockValue(pizza.stock)}`;
     }
 
-    return `Stock: ${pizza.stock}`;
+    return `Stock: ${formatStockValue(pizza.stock)}`;
 };
 
 export const buildStockAlerts = (pizzas) =>
@@ -176,6 +211,7 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
         'costo_envio',
         'subtotal',
         'total',
+        'aviso_whatsapp',
         'detalle_pizzas',
         'observaciones',
     ];
@@ -191,7 +227,8 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
         order.shipping_cost,
         order.subtotal,
         order.total,
-        order.sales.map((item) => `${item.name} x${item.quantity}`).join(' | '),
+        order.notify_whatsapp ? order.whatsapp_notification_status : 'no',
+        order.sales.map((item) => formatSaleItemLabel(item)).join(' | '),
         order.notes,
     ]);
 

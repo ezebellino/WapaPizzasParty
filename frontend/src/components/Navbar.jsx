@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaCashRegister, FaChartLine, FaPizzaSlice, FaSignOutAlt } from 'react-icons/fa';
 import { AppContext } from '../store/AppContext';
-import { calculateCartPizzas } from '../utils/sales';
+import { calculateCartPizzas, formatPizzaQuantity } from '../utils/sales';
 
 const Navbar = () => {
     const location = useLocation();
@@ -58,7 +58,7 @@ const Navbar = () => {
                                 </span>
                                 <div>
                                     <p className="text-xs uppercase tracking-wide text-muted">Pedido actual</p>
-                                    <p className="text-sm font-semibold text-text">{pizzasInCart} pizzas cargadas</p>
+                                    <p className="text-sm font-semibold text-text">{formatPizzaQuantity(pizzasInCart)} cargadas</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 rounded-2xl border border-primary/15 bg-white/80 px-4 py-2 shadow-modern">

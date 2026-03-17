@@ -1,6 +1,7 @@
 import { meRequest, loginRequest } from '../api/auth';
 import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
 import { createSale, fetchSales, updateOrderStatus } from '../api/sales';
+import { HALF_PIZZA_STEP } from '../utils/sales';
 
 const emptySession = {
     isAuthenticated: false,
@@ -17,7 +18,10 @@ const resetOrderForm = () => ({
     notes: '',
     includeShipping: false,
     shippingCost: 1500,
+    notifyWhatsApp: false,
 });
+
+const normalizeHalfStep = (value) => Math.round((Number(value) || 0) * 2) / 2;
 
 const syncCartWithPizzas = (cart, pizzas) =>
     cart
@@ -29,10 +33,10 @@ const syncCartWithPizzas = (cart, pizzas) =>
 
             return {
                 ...item,
-                quantity: Math.min(item.quantity, pizza.stock),
+                quantity: normalizeHalfStep(Math.min(item.quantity, pizza.stock)),
             };
         })
-        .filter(Boolean);
+        .filter((item) => item && item.quantity >= HALF_PIZZA_STEP);
 
 const persistSession = (storageKey, session) => {
     if (typeof window === 'undefined') {
@@ -190,12 +194,12 @@ const getFlux = (setStore, storageKey) => ({
 
         setStore((prevStore) => {
             const existingItem = prevStore.cart.find((item) => item.id === pizza.id);
-            const reservedQuantity = existingItem?.quantity ?? 0;
+            const reservedQuantity = normalizeHalfStep(existingItem?.quantity ?? 0);
 
-            if (reservedQuantity >= pizza.stock) {
+            if (reservedQuantity + HALF_PIZZA_STEP > pizza.stock + 1e-9) {
                 return {
                     ...prevStore,
-                    appError: `No puedes agregar mas de ${pizza.stock} unidades de ${pizza.name}.`,
+                    appError: `No puedes agregar mas de ${pizza.stock} pizzas de ${pizza.name}.`,
                 };
             }
 
@@ -204,7 +208,7 @@ const getFlux = (setStore, storageKey) => ({
                     ...prevStore,
                     appError: null,
                     cart: prevStore.cart.map((item) =>
-                        item.id === pizza.id ? { ...item, quantity: item.quantity + 1 } : item
+                        item.id === pizza.id ? { ...item, quantity: normalizeHalfStep(item.quantity + HALF_PIZZA_STEP) } : item
                     ),
                 };
             }
@@ -212,7 +216,7 @@ const getFlux = (setStore, storageKey) => ({
             return {
                 ...prevStore,
                 appError: null,
-                cart: [...prevStore.cart, { ...pizza, quantity: 1 }],
+                cart: [...prevStore.cart, { ...pizza, quantity: HALF_PIZZA_STEP }],
             };
         });
     },
@@ -222,7 +226,7 @@ const getFlux = (setStore, storageKey) => ({
             const pizza = prevStore.pizzas.find((item) => item.id === id);
             const cartItem = prevStore.cart.find((item) => item.id === id);
 
-            if (!pizza || !cartItem || cartItem.quantity >= pizza.stock) {
+            if (!pizza || !cartItem || cartItem.quantity + HALF_PIZZA_STEP > pizza.stock + 1e-9) {
                 return {
                     ...prevStore,
                     appError: pizza ? `No hay mas stock para ${pizza.name}.` : prevStore.appError,
@@ -233,7 +237,7 @@ const getFlux = (setStore, storageKey) => ({
                 ...prevStore,
                 appError: null,
                 cart: prevStore.cart.map((item) =>
-                    item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+                    item.id === id ? { ...item, quantity: normalizeHalfStep(item.quantity + HALF_PIZZA_STEP) } : item
                 ),
             };
         });
@@ -242,9 +246,11 @@ const getFlux = (setStore, storageKey) => ({
     decrementCartItem: (id) => {
         setStore((prevStore) => ({
             ...prevStore,
-            cart: prevStore.cart.map((item) =>
-                item.id === id ? { ...item, quantity: Math.max(1, item.quantity - 1) } : item
-            ),
+            cart: prevStore.cart
+                .map((item) =>
+                    item.id === id ? { ...item, quantity: normalizeHalfStep(item.quantity - HALF_PIZZA_STEP) } : item
+                )
+                .filter((item) => item.quantity >= HALF_PIZZA_STEP),
         }));
     },
 
@@ -351,6 +357,7 @@ const getFlux = (setStore, storageKey) => ({
                 notes: orderForm.notes,
                 include_shipping: orderForm.includeShipping,
                 shipping_cost: Number(orderForm.shippingCost) || 0,
+                notify_whatsapp: orderForm.notifyWhatsApp,
                 sales: cart,
             });
 

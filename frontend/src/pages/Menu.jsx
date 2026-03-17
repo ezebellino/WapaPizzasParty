@@ -12,10 +12,10 @@ const Menu = () => {
     }, [actions]);
 
     const handleAddToCart = (pizza) => {
-        actions.addToCart({ ...pizza, quantity: 1 });
+        actions.addToCart(pizza);
         Swal.fire({
             title: 'Agregado al carrito',
-            text: `${pizza.name} ha sido agregado al carrito.`,
+            text: `Se agrego 1/2 pizza de ${pizza.name} al carrito.`,
             icon: 'success',
             confirmButtonText: 'OK',
         });
@@ -49,7 +49,7 @@ const Menu = () => {
                                         className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                                         onClick={() => handleAddToCart(pizza)}
                                     >
-                                        Agregar al carrito
+                                        Agregar 1/2 pizza
                                     </button>
                                 </div>
                             </motion.div>

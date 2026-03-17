@@ -51,6 +51,7 @@ const AppProvider = ({ children }) => {
             notes: '',
             includeShipping: false,
             shippingCost: 1500,
+            notifyWhatsApp: false,
         },
     });
 

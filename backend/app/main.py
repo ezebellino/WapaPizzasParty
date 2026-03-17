@@ -42,10 +42,10 @@ async def root():
 
 
 def calculate_subtotal(items: list[SaleItem]) -> int:
-    return sum(item.price * item.quantity for item in items)
+    return round(sum(item.price * item.quantity for item in items))
 
 
-def calculate_total_pizzas(items: list[SaleItem]) -> int:
+def calculate_total_pizzas(items: list[SaleItem]) -> float:
     return sum(item.quantity for item in items)
 
 
@@ -109,16 +109,18 @@ def build_order_from_payload(payload: OrderCreate) -> Order:
     return Order(
         order_id=f'order-{timestamp.strftime("%Y%m%d%H%M%S%f")}',
         created_at=timestamp.isoformat(),
-        status='pendiente',
+        status='procesado',
         receiver_name=payload.receiver_name.strip(),
         receiver_phone=payload.receiver_phone.strip(),
         payment_method=payload.payment_method.strip(),
         notes=payload.notes.strip(),
         include_shipping=payload.include_shipping,
         shipping_cost=shipping_cost,
+        notify_whatsapp=payload.notify_whatsapp,
         sales=payload.sales,
         subtotal=subtotal,
         total=subtotal + shipping_cost,
+        whatsapp_notification_status='pendiente' if payload.notify_whatsapp else 'no_solicitado',
     )
 
 
@@ -137,9 +139,11 @@ def build_legacy_order(raw_day: dict) -> Order:
         notes='Migrado desde el formato historico de ventas.',
         include_shipping=False,
         shipping_cost=max(total - subtotal, 0),
+        notify_whatsapp=False,
         sales=items,
         subtotal=subtotal,
         total=total,
+        whatsapp_notification_status='no_solicitado',
     )
 
 
@@ -194,10 +198,10 @@ def reduce_stock_for_order(pizzas: list[Pizza], items: list[SaleItem]) -> list[P
             if not pizza.available:
                 raise HTTPException(status_code=400, detail=f'{pizza.name} no esta disponible.')
 
-            if pizza.stock < item.quantity:
+            if pizza.stock + 1e-9 < item.quantity:
                 raise HTTPException(status_code=400, detail=f'Stock insuficiente para {pizza.name}.')
 
-            new_stock = pizza.stock - item.quantity
+            new_stock = round((pizza.stock - item.quantity) * 2) / 2
             updated_pizzas[index] = pizza.model_copy(
                 update={
                     'stock': new_stock,
@@ -252,6 +256,9 @@ async def registrar_venta(
     venta: OrderCreate,
     _: SessionUser = Depends(require_role('admin', 'operator')),
 ):
+    if venta.notify_whatsapp and not venta.receiver_phone.strip():
+        raise HTTPException(status_code=400, detail='Ingresa un telefono para poder avisar por WhatsApp.')
+
     pizzas = load_pizzas()
     updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)
     ventas = cargar_ventas()
@@ -294,7 +301,14 @@ async def actualizar_estado_pedido(
 
         for index, order in enumerate(dia.orders):
             if order.order_id == order_id:
-                updated_order = order.model_copy(update={'status': payload.status})
+                updated_order = order.model_copy(
+                    update={
+                        'status': payload.status,
+                        'whatsapp_notification_status': (
+                            'pendiente' if order.notify_whatsapp else order.whatsapp_notification_status
+                        ),
+                    }
+                )
                 dia.orders[index] = updated_order
                 refresh_sales_day(dia)
                 guardar_ventas(ventas)
