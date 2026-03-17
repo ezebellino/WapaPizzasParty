@@ -39,7 +39,7 @@ LOGS_DIR = BASE_DIR / 'logs'
 LOG_FILE = LOGS_DIR / 'wapapizzaparty.log'
 FRONTEND_DIST_DIR = PROJECT_DIR / 'frontend' / 'dist'
 FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / 'index.html'
-LOCAL_ACCESS_ENABLED = os.getenv('WAPA_LOCAL_ACCESS_ENABLED', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+LOCAL_ACCESS_ENABLED = os.getenv('WAPA_LOCAL_ACCESS_ENABLED', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
 LOCAL_ACCESS_USERNAME = os.getenv('WAPA_LOCAL_ACCESS_USERNAME', 'admin').strip()
 SHOW_MANUAL_LOGIN = os.getenv('WAPA_SHOW_MANUAL_LOGIN', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
 
@@ -69,6 +69,44 @@ def write_log(level: str, message: str, **context) -> None:
     context_items = [f'{key}={value}' for key, value in context.items() if value not in {None, ''}]
     full_message = message if not context_items else f"{message} | {' | '.join(context_items)}"
     getattr(logger, level.lower(), logger.info)(full_message)
+
+
+def run_startup_checks() -> None:
+    write_log(
+        'info',
+        'Chequeo de arranque del puesto',
+        local_access_enabled=LOCAL_ACCESS_ENABLED,
+        local_access_username=LOCAL_ACCESS_USERNAME,
+        show_manual_login=SHOW_MANUAL_LOGIN,
+        frontend_dist=FRONTEND_INDEX_FILE.exists(),
+        log_file=LOG_FILE,
+    )
+
+    if not USERS_FILE.exists():
+        write_log('warning', 'No existe users.json. El puesto no podra autenticar usuarios.')
+    else:
+        users = load_users()
+        if not users:
+            write_log('warning', 'users.json existe pero no contiene usuarios activos.')
+        elif LOCAL_ACCESS_ENABLED and not find_user_by_username(LOCAL_ACCESS_USERNAME):
+            write_log('warning', 'El usuario configurado para acceso rapido no existe.', username=LOCAL_ACCESS_USERNAME)
+
+    if not FRONTEND_INDEX_FILE.exists():
+        write_log('warning', 'No existe frontend/dist/index.html. La app local no podra abrir la interfaz compilada.')
+
+    if os.getenv('WAPA_AUTH_SECRET', 'change-this-secret-in-production') == 'change-this-secret-in-production':
+        write_log('warning', 'Se esta usando el secreto por defecto de autenticacion.')
+
+    if not VENTAS_FILE.exists():
+        write_log('warning', 'No existe ventas.json. Se creara cuando se registre la primera venta.')
+
+    if not PIZZAS_FILE.exists():
+        write_log('error', 'No existe pizzas.json. El puesto no podra cargar el catalogo.')
+
+
+@app.on_event('startup')
+async def on_startup():
+    run_startup_checks()
 
 
 @app.middleware('http')
