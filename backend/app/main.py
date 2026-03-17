@@ -140,6 +140,12 @@ def sync_order_whatsapp_status(order: Order) -> Order:
     if not should_notify_status(order.status):
         return order
 
+    if (
+        order.whatsapp_last_notified_status == order.status
+        and order.whatsapp_notification_status in {'simulado', 'enviado'}
+    ):
+        return order
+
     result = dispatch_whatsapp_notification(order)
     return order.model_copy(
         update={

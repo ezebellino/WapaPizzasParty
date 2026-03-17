@@ -4,7 +4,13 @@ import hmac
 import json
 import os
 import time
+from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
+
+
+load_dotenv(Path(__file__).resolve().parents[1] / '.env')
 
 
 AUTH_SECRET = os.getenv('WAPA_AUTH_SECRET', 'change-this-secret-in-production')
