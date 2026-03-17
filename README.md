@@ -67,6 +67,25 @@ npm run dev
 
 El frontend queda disponible en `http://localhost:5173`.
 
+### Inicio rapido en Windows
+
+Desde la raiz del proyecto podes levantar ambos servicios con:
+
+```powershell
+.\scripts\start-dev.ps1
+```
+
+Eso abre dos ventanas nuevas de PowerShell:
+
+- una para FastAPI,
+- y otra para Vite.
+
+Si solo queres ver los comandos sin abrir ventanas:
+
+```powershell
+.\scripts\start-dev.ps1 -SameWindow
+```
+
 ## Flujo actual de datos
 
 - El frontend consulta pizzas en `GET /pizzas`.
