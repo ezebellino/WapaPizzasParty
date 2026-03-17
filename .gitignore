@@ -1,0 +1,20 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
+.react-router/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+
+# Runtime data
+backend/app/ventas.json

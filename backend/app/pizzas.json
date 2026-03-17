@@ -1,0 +1,38 @@
+[
+    {
+        "id": 1,
+        "name": "Muzzarella",
+        "description": "Clasica pizza de muzzarella con oregano y aceitunas.",
+        "price": 7500
+    },
+    {
+        "id": 2,
+        "name": "Napolitana",
+        "description": "Pizza con rodajas de tomate y ajo, cubierta con muzzarella y oregano.",
+        "price": 8000
+    },
+    {
+        "id": 3,
+        "name": "Especial",
+        "description": "Jamon, morron, muzzarella, oregano y aceitunas.",
+        "price": 8000
+    },
+    {
+        "id": 4,
+        "name": "Fugazzeta",
+        "description": "Pizza con muzzarella, oregano, aceitunas y cubierta con cebolla cocida.",
+        "price": 8000
+    },
+    {
+        "id": 5,
+        "name": "Roquefort",
+        "description": "Muzzarella, roquefort, oregano y aceitunas.",
+        "price": 9000
+    },
+    {
+        "id": 6,
+        "name": "Matambre",
+        "description": "Muzzarella, matambre, oregano y aceitunas.",
+        "price": 9500
+    }
+]
