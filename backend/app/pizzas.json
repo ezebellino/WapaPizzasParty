@@ -41,7 +41,7 @@
         "description": "Muzzarella, roquefort, oregano y aceitunas.",
         "price": 9000,
         "available": true,
-        "stock": 5.0,
+        "stock": 2.0,
         "low_stock_threshold": 2.0
     },
     {
