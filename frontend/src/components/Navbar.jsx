@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaCashRegister, FaChartLine, FaPizzaSlice, FaSignOutAlt } from 'react-icons/fa';
 import { AppContext } from '../store/AppContext';
+import logoImage from '../assets/WapaPizzaParty.jpeg';
 import { calculateCartPizzas, formatPizzaQuantity } from '../utils/sales';
 
 const Navbar = () => {
@@ -10,16 +11,25 @@ const Navbar = () => {
     const pizzasInCart = calculateCartPizzas(store.cart);
 
     const navItems = [
-        { to: '/', label: 'Mostrador', icon: <FaCashRegister />, roles: ['admin', 'operator'] },
-        { to: '/tesoreria', label: 'Tesoreria', icon: <FaChartLine />, roles: ['admin'] },
-    ].filter((item) => store.session.role && item.roles.includes(store.session.role));
+        { to: '/', label: 'Mostrador', icon: <FaCashRegister /> },
+        { to: '/tesoreria', label: 'Tesoreria', icon: <FaChartLine /> },
+    ];
 
     return (
         <header className="fixed inset-x-0 top-0 z-50 border-b border-primary/10 bg-surface/90 backdrop-blur">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">WapaPizzasParty</p>
-                    <h1 className="mt-1 text-xl font-semibold text-text">Panel de pedidos y tesoreria</h1>
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={logoImage}
+                            alt="Logo WapaPizzaParty"
+                            className="h-12 w-12 rounded-full border border-primary/15 object-cover shadow-modern"
+                        />
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">WapaPizzaParty</p>
+                            <h1 className="mt-1 text-xl font-semibold text-text">Mostrador y caja</h1>
+                        </div>
+                    </div>
                 </div>
 
                 {store.session.isAuthenticated ? (
@@ -45,7 +55,7 @@ const Navbar = () => {
                     </nav>
                 ) : (
                     <div className="rounded-full border border-primary/15 bg-white/70 px-4 py-2 text-sm font-medium text-muted shadow-modern">
-                        Inicia sesion para continuar
+                        Ingresar para continuar
                     </div>
                 )}
 

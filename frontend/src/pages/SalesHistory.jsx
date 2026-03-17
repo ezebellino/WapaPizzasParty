@@ -266,17 +266,28 @@ const SalesHistory = () => {
                                                     </p>
                                                 ) : null}
                                             </div>
-                                            <select
-                                                value={order.status}
-                                                onChange={(event) => actions.updateOrderStatus(order.date, order.order_id, event.target.value)}
-                                                className="rounded-2xl border border-primary/15 bg-white px-4 py-2 text-sm text-text outline-none transition focus:border-primary"
-                                            >
-                                                {ORDER_STATUS_OPTIONS.map((option) => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <div className="flex flex-col gap-2 sm:items-end">
+                                                {order.receiver_phone ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => actions.openOrderWhatsApp(order.date, order.order_id)}
+                                                        className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-sm font-semibold text-success hover:border-success hover:bg-success/5"
+                                                    >
+                                                        Abrir WhatsApp
+                                                    </button>
+                                                ) : null}
+                                                <select
+                                                    value={order.status}
+                                                    onChange={(event) => actions.updateOrderStatus(order.date, order.order_id, event.target.value)}
+                                                    className="rounded-2xl border border-primary/15 bg-white px-4 py-2 text-sm text-text outline-none transition focus:border-primary"
+                                                >
+                                                    {ORDER_STATUS_OPTIONS.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 ))

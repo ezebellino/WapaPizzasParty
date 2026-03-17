@@ -36,7 +36,7 @@ const App = () => {
                         <Route
                             path="/tesoreria"
                             element={
-                                <ProtectedRoute requiredRole="admin">
+                                <ProtectedRoute>
                                     <SalesHistory />
                                 </ProtectedRoute>
                             }

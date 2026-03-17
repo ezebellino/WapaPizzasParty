@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import logoImage from '../assets/WapaPizzaParty.jpeg';
 import { AppContext } from '../store/AppContext';
 
 const Login = () => {
@@ -24,10 +25,19 @@ const Login = () => {
 
     return (
         <div className="mx-auto max-w-md rounded-[28px] border border-primary/10 bg-white/90 p-8 shadow-modern">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Acceso</p>
-            <h2 className="mt-2 text-3xl font-semibold text-text">Ingresar al panel</h2>
+            <div className="flex items-center gap-4">
+                <img
+                    src={logoImage}
+                    alt="Logo WapaPizzaParty"
+                    className="h-20 w-20 rounded-full border border-primary/15 object-cover shadow-modern"
+                />
+                <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Acceso</p>
+                    <h2 className="mt-2 text-3xl font-semibold text-text">Ingresar a WapaPizzaParty</h2>
+                </div>
+            </div>
             <p className="mt-2 text-sm text-muted">
-                Usa las credenciales creadas por administracion para entrar segun tu rol operativo.
+                Usa las credenciales del puesto para abrir el mostrador y la caja del negocio.
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

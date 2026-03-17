@@ -15,3 +15,6 @@ export const updateOrderStatus = (date, orderId, status) =>
         method: 'PATCH',
         body: JSON.stringify({ status }),
     });
+
+export const fetchOrderWhatsAppLink = (date, orderId) =>
+    apiRequest(`/ventas/${date}/${orderId}/whatsapp-link`);

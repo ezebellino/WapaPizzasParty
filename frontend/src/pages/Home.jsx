@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import { FaMinus, FaPlus, FaReceipt, FaStoreSlash, FaTruck } from 'react-icons/fa';
+import logoImage from '../assets/WapaPizzaParty.jpeg';
 import { AppContext } from '../store/AppContext';
 import {
     ORDER_STATUS_OPTIONS,
@@ -93,8 +94,17 @@ const Home = () => {
                 <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Mostrador</p>
-                            <h2 className="mt-2 text-3xl font-semibold text-text">Carga rapida de pedidos</h2>
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src={logoImage}
+                                    alt="Logo WapaPizzaParty"
+                                    className="h-16 w-16 rounded-full border border-primary/15 object-cover shadow-modern"
+                                />
+                                <div>
+                                    <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Mostrador</p>
+                                    <h2 className="mt-2 text-3xl font-semibold text-text">Carga rapida de pedidos</h2>
+                                </div>
+                            </div>
                             <p className="mt-2 max-w-2xl text-sm text-muted">
                                 Carga medias pizzas, arma combinaciones mitad y mitad, calcula el total automaticamente y controla pedidos y stock en una sola vista.
                             </p>
@@ -382,7 +392,20 @@ const Home = () => {
 
                         {store.lastCreatedOrder ? (
                             <div className="mt-4 rounded-2xl border border-success/20 bg-success/10 p-4 text-sm text-success">
-                                Ultimo pedido guardado: {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <span>
+                                        Ultimo pedido guardado: {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
+                                    </span>
+                                    {store.lastCreatedOrder.receiver_phone ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => actions.openOrderWhatsApp(today, store.lastCreatedOrder.order_id)}
+                                            className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
+                                        >
+                                            Enviar WhatsApp
+                                        </button>
+                                    ) : null}
+                                </div>
                             </div>
                         ) : null}
 

@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth import create_access_token, decode_access_token, verify_password
-from .notifications import dispatch_whatsapp_notification, should_notify_status
+from .notifications import build_whatsapp_deep_link, build_whatsapp_message, dispatch_whatsapp_notification, should_notify_status
 from .schemas import (
     AuthSession,
     LoginRequest,
@@ -39,7 +39,7 @@ app.add_middleware(
 
 @app.get('/')
 async def root():
-    return {'message': 'API de gestion de WapaPizzasParty'}
+    return {'message': 'API de gestion de WapaPizzaParty'}
 
 
 def calculate_subtotal(items: list[SaleItem]) -> int:
@@ -325,7 +325,7 @@ async def actualizar_estado_pedido(
     fecha: str,
     order_id: str,
     payload: OrderStatusUpdate,
-    _: SessionUser = Depends(require_role('admin')),
+    _: SessionUser = Depends(require_role('admin', 'operator')),
 ):
     ventas = cargar_ventas()
 
@@ -354,6 +354,34 @@ async def actualizar_estado_pedido(
     raise HTTPException(status_code=404, detail='No hay ventas registradas para esta fecha.')
 
 
+@app.get('/ventas/{fecha}/{order_id}/whatsapp-link')
+async def obtener_link_whatsapp_pedido(
+    fecha: str,
+    order_id: str,
+    _: SessionUser = Depends(require_role('admin', 'operator')),
+):
+    ventas = cargar_ventas()
+
+    for dia in ventas:
+        if dia.date != fecha:
+            continue
+
+        for order in dia.orders:
+            if order.order_id == order_id:
+                if not order.receiver_phone.strip():
+                    raise HTTPException(status_code=400, detail='El pedido no tiene telefono de contacto.')
+
+                return {
+                    'phone': order.receiver_phone,
+                    'message': build_whatsapp_message(order),
+                    'url': build_whatsapp_deep_link(order),
+                }
+
+        raise HTTPException(status_code=404, detail='No encontramos el pedido solicitado.')
+
+    raise HTTPException(status_code=404, detail='No hay ventas registradas para esta fecha.')
+
+
 @app.get('/pizzas', response_model=list[Pizza])
 async def get_pizzas(_: SessionUser = Depends(get_current_user)) -> list[Pizza]:
     return load_pizzas()
@@ -363,7 +391,7 @@ async def get_pizzas(_: SessionUser = Depends(get_current_user)) -> list[Pizza]:
 async def actualizar_inventario_pizza(
     pizza_id: int,
     payload: PizzaInventoryUpdate,
-    _: SessionUser = Depends(require_role('admin')),
+    _: SessionUser = Depends(require_role('admin', 'operator')),
 ) -> Pizza:
     pizzas = load_pizzas()
 

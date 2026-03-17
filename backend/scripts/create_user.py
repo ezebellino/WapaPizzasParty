@@ -24,7 +24,7 @@ def save_users(users: list[dict]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Crear usuario para WapaPizzasParty.')
+    parser = argparse.ArgumentParser(description='Crear usuario para WapaPizzaParty.')
     parser.add_argument('--username', required=True)
     parser.add_argument('--name', required=True)
     parser.add_argument('--role', required=True, choices=['admin', 'operator'])

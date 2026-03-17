@@ -1,6 +1,6 @@
-# Frontend WapaPizzasParty
+# Frontend WapaPizzaParty
 
-Frontend en React para la experiencia de venta y consulta basica de WapaPizzasParty.
+Frontend en React para la experiencia de venta y consulta basica de WapaPizzaParty.
 
 ## Objetivo actual
 

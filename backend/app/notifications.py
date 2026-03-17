@@ -142,6 +142,13 @@ def build_whatsapp_message(order: Order) -> str:
     return '\n'.join(part for part in message_parts if part is not None)
 
 
+def build_whatsapp_deep_link(order: Order) -> str:
+    normalized_phone = normalize_phone_number(order.receiver_phone)
+    message = build_whatsapp_message(order)
+    encoded_message = urllib.parse.quote(message, safe='')
+    return f'https://wa.me/{normalized_phone.replace("+", "")}?text={encoded_message}'
+
+
 def dispatch_mock_notification(order: Order, message: str, sent_at: str) -> NotificationDispatchResult:
     return NotificationDispatchResult(
         delivery_status='simulado',

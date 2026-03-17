@@ -1,6 +1,6 @@
 import { meRequest, loginRequest } from '../api/auth';
 import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
-import { createSale, fetchSales, updateOrderStatus } from '../api/sales';
+import { createSale, fetchOrderWhatsAppLink, fetchSales, updateOrderStatus } from '../api/sales';
 import { HALF_PIZZA_STEP } from '../utils/sales';
 
 const emptySession = {
@@ -324,6 +324,28 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: 'No pudimos actualizar el estado del pedido.',
+            }));
+            return { success: false };
+        }
+    },
+
+    openOrderWhatsApp: async (date, orderId) => {
+        try {
+            const response = await fetchOrderWhatsAppLink(date, orderId);
+            if (typeof window !== 'undefined') {
+                window.open(response.url, '_blank', 'noopener,noreferrer');
+            }
+
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+            }));
+            return { success: true };
+        } catch (error) {
+            console.error('Error al abrir WhatsApp del pedido:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos abrir el comprobante de WhatsApp.',
             }));
             return { success: false };
         }

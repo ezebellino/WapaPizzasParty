@@ -1,6 +1,6 @@
-# WapaPizzasParty
+# WapaPizzaParty
 
-Aplicacion web en desarrollo para la gestion simple de una pizzeria y servicio de pizza party.
+Aplicacion en desarrollo para la gestion simple de una pizzeria y servicio de pizza party.
 
 Hoy el proyecto ya permite mostrar pizzas, armar un carrito, registrar ventas y consultar historial por fecha. La siguiente etapa del trabajo esta orientada a ordenar la base tecnica para que el producto pueda crecer con menos deuda y una estructura mas clara.
 
@@ -8,7 +8,7 @@ Hoy el proyecto ya permite mostrar pizzas, armar un carrito, registrar ventas y 
 
 - Estado actual: prototipo funcional en evolucion.
 - Objetivo inmediato: refactorizar estructura, datos y documentacion.
-- Plan de trabajo: ver `REFACTOR_PLAN_WAPAPIZZASPARTY.md`.
+- Plan de trabajo actual: ver `PLAN_WAPAPIZZAPARTY_LOCAL.md`.
 
 ## Funcionalidades actuales
 
@@ -39,7 +39,7 @@ Project_1/
 |  |  |- components/
 |  |  |- pages/
 |  |  |- store/
-|- REFACTOR_PLAN_WAPAPIZZASPARTY.md
+|- PLAN_WAPAPIZZAPARTY_LOCAL.md
 |- README.md
 ```
 
@@ -142,4 +142,4 @@ Las proximas mejoras estan orientadas a:
 
 ## Autor
 
-Proyecto impulsado por Ezequiel Bellino para WapaPizzasParty.
+Proyecto impulsado por Ezequiel Bellino para WapaPizzaParty.
