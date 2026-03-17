@@ -1,0 +1,20 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #1e1e1e; /* Fondo neutro */
+    color: #cfcfcf;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0 0.5em 0 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    margin: 0.5em 0;
+}

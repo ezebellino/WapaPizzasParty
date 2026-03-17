@@ -1,0 +1,95 @@
+/* CustomCalendar.css */
+.react-calendar {
+    width: 100%;
+    max-width: 600px;
+    background: linear-gradient(145deg, #ff6f61, #ffcc00); /* Gradiente rojo-naranja */
+    border: 2px solid #ff6f61;
+    border-radius: 15px;
+    box-shadow: 0 8px 16px rgba(255, 111, 97, 0.3);
+    color: black;
+    font-family: 'Arial', sans-serif;
+    font-size: 24px;
+    padding: 10px;
+    
+}
+
+.react-calendar__navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    text-transform: capitalize;
+}
+
+.react-calendar__navigation button {
+    color: #fff;
+    background: linear-gradient(145deg, #ff6f61, #ff8c42); /* Gradiente rojo-naranja */
+    border: none;
+    font-size: 1.2em;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-calendar__navigation button:hover {
+    background: linear-gradient(145deg, #ff8c42, #ff6f61); /* Invertir gradiente */
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(255, 111, 97, 0.5);
+}
+
+.react-calendar__navigation button:disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.react-calendar__month-view__weekdays {
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+    padding: 10px;
+    text-align: center;
+}
+
+.react-calendar__month-view__days__day {
+    color: black;
+    padding: 12px;
+    border-radius: 50%;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-calendar__month-view__days__day--weekend {
+    color: #ffcc00; /* Amarillo para los fines de semana */
+}
+
+.react-calendar__tile--now {
+    background: linear-gradient(145deg, #ffcc00, #ff8c42); /* Gradiente amarillo-naranja */
+    color: black !important;
+    font-weight: bold;
+}
+
+.react-calendar__tile--active {
+    background: linear-gradient(145deg, #ff8c42, #ff6f61); /* Gradiente naranja-rojo */
+    color: #fff;
+    font-weight: bold;
+}
+
+.react-calendar__tile:hover {
+    background: linear-gradient(145deg, #ff6f61, #ffcc00); /* Gradiente rojo-amarillo */
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(255, 111, 97, 0.5);
+}
+
+.react-calendar__tile--hasActive {
+    background: linear-gradient(145deg, #ff8c42, #ffcc00); /* Gradiente naranja-amarillo */
+    color: #fff;
+}
+
+.react-calendar__tile--hasActive:hover {
+    background: linear-gradient(145deg, #ffcc00, #ff8c42); /* Invertir gradiente */
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(255, 204, 0, 0.5);
+}

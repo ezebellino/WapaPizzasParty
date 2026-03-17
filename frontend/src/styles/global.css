@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+body {
+    @apply text-gray-800 font-sans;
+    margin: 0;
+}
+
+h1 {
+    margin-top: 10%;
+}
+
+footer {
+    bottom: 0%;
+    position: static;
+}
+
+a {
+    @apply text-primary;
+}
+
+button {
+    @apply px-4 py-3 rounded transition duration-300 ease-in-out;
+}
+
+button.primary {
+    @apply bg-primary text-white hover:bg-blue-600;
+}
+
+button.secondary {
+    @apply bg-secondary text-white hover:bg-gray-700;
+}
+
+button.accent {
+    @apply bg-accent text-white hover:bg-yellow-500;
+}
+
+button.danger {
+    @apply bg-red-500 text-white hover:bg-red-700;
+}
+
+/* Keyframes para el movimiento del fondo */

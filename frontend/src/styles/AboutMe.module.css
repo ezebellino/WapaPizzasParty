@@ -1,0 +1,58 @@
+.container {
+    text-align: center;
+    padding: 2rem;
+    margin: 8% 30%;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+}
+
+.description {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.socialLinks {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.link:hover {
+    color: goldenrod;
+}
+
+.icon {
+    font-size: 1.5rem;
+}
+
+.imgContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px; /* Ajusta según necesidad */
+}
+
+.profileImage {
+    width: 150px; /* Ajusta el tamaño según necesidad */
+    height: 150px; /* Para que sea completamente circular */
+    border-radius: 50%;
+    object-fit: cover; /* Asegura que la imagen se vea bien */
+    border: 2px solid #ffcc00; /* Opcional: un borde alrededor */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Opcional: sombra */
+}

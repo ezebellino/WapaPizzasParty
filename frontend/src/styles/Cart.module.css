@@ -1,0 +1,21 @@
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+button {
+    transition: transform 0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}

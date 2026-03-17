@@ -1,0 +1,49 @@
+.Navbar{
+    width: 100%;
+    position: fixed;
+
+    z-index: 99;
+}
+
+.navButton {
+    color: white;
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.navbarCartIcon {
+    position: relative;
+    color: white;
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+
+.navbarCartIcon:hover {
+    transform: scale(1.3);
+}
+
+.navbarCartBadge {
+    position: relative;
+    top: -12px;
+    right: -14px;
+    background-color: #ff0000;
+    color: #fff;
+    border-radius: 50%;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.navbarCartBadge:hover {
+    background-color: aquamarine;
+    color: black;
+    font-weight: bolder;
+}

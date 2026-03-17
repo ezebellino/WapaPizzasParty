@@ -1,0 +1,122 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh; /* Asegura que ocupe toda la pantalla */
+    padding-top: 6rem; /* Ajusta este valor para que las caras se vean bien */
+    padding-left: 2rem;
+    padding-right: 2rem;
+    background-image: url('../img/wapaPerfil.jpg');
+    background-size: cover; /* Estira la imagen para cubrir todo */
+    background-position: center 20%; /* Mueve la imagen hacia abajo para mostrar las caras */
+    background-repeat: no-repeat;
+    color: #fff; /* Texto blanco para contraste */
+    text-shadow: 1px 1px 18px rgba(0, 0, 0, 0.7);
+}
+
+
+.title {
+    font-size: 2.5rem !important;
+    margin: 2.5rem 0;
+    font-weight: bold;
+}
+
+.description {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.contactTitle {
+    font-size: 2rem !important;
+    margin: 0.5rem 0 1rem;
+    font-weight: bold;
+}
+
+.contact {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.iconLink {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: transform 1.2s;
+}
+
+.iconLink:hover .icon {
+    color: #007acc;
+    transform: scale(1.05);
+}
+
+.iconLink:hover .text {
+    color: #007acc;
+    transform: scale(1.05);
+}
+
+.icon {
+    color: #555;
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+}
+
+.text {
+    color: #f8f7f7;
+    font-size: 1.2rem;
+    transition: color 1.5s ease-in-out;
+}
+
+.slogan {
+    font-weight: bold;
+    color: #007acc;
+    font-style: italic;
+}
+
+.slogan::before {
+    content: '"';
+}
+
+.slogan::after {
+    content: '"';
+}
+
+.slogan:hover {
+    color: whitesmoke;
+
+}
+
+@media screen and (min-width: 768px) {
+    .container {
+        padding-top: 8rem;
+    }
+
+    .title {
+        font-size: 4rem;
+    }
+
+    .description {
+        font-size: 1.5rem;
+    }
+
+    .contactTitle {
+        font-size: 2.5rem;
+    }
+
+    .iconLink {
+        font-size: 1.5rem;
+    }
+
+    .icon {
+        font-size: 2rem;
+    }
+
+    .text {
+        font-size: 1.5rem;
+    }
+}
+

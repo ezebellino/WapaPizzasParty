@@ -1,0 +1,8 @@
+.ZeqeDev {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.ZeqeDev:hover {
+    color: goldenrod;
+}
