@@ -5,8 +5,8 @@
         "description": "Clasica pizza de muzzarella con oregano y aceitunas.",
         "price": 7500,
         "available": true,
-        "stock": 12,
-        "low_stock_threshold": 4
+        "stock": 11.0,
+        "low_stock_threshold": 4.0
     },
     {
         "id": 2,
@@ -14,8 +14,8 @@
         "description": "Pizza con rodajas de tomate y ajo, cubierta con muzzarella y oregano.",
         "price": 8000,
         "available": true,
-        "stock": 10,
-        "low_stock_threshold": 4
+        "stock": 8.0,
+        "low_stock_threshold": 4.0
     },
     {
         "id": 3,
@@ -23,8 +23,8 @@
         "description": "Jamon, morron, muzzarella, oregano y aceitunas.",
         "price": 8000,
         "available": true,
-        "stock": 8,
-        "low_stock_threshold": 3
+        "stock": 8.0,
+        "low_stock_threshold": 3.0
     },
     {
         "id": 4,
@@ -32,8 +32,8 @@
         "description": "Pizza con muzzarella, oregano, aceitunas y cubierta con cebolla cocida.",
         "price": 8000,
         "available": true,
-        "stock": 6,
-        "low_stock_threshold": 3
+        "stock": 5.5,
+        "low_stock_threshold": 3.0
     },
     {
         "id": 5,
@@ -41,8 +41,8 @@
         "description": "Muzzarella, roquefort, oregano y aceitunas.",
         "price": 9000,
         "available": true,
-        "stock": 5,
-        "low_stock_threshold": 2
+        "stock": 5.0,
+        "low_stock_threshold": 2.0
     },
     {
         "id": 6,
@@ -50,7 +50,7 @@
         "description": "Muzzarella, matambre, oregano y aceitunas.",
         "price": 9500,
         "available": true,
-        "stock": 4,
-        "low_stock_threshold": 2
+        "stock": 2.0,
+        "low_stock_threshold": 2.0
     }
 ]
