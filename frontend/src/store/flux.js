@@ -1,5 +1,5 @@
 import { localAccessRequest, meRequest, loginRequest } from '../api/auth';
-import { fetchPizzas, updatePizzaInventory } from '../api/pizzas';
+import { createPizza, fetchPizzas, updatePizza } from '../api/pizzas';
 import { createSale, fetchOrderWhatsAppLink, fetchSales, updateOrderStatus } from '../api/sales';
 import { HALF_PIZZA_STEP } from '../utils/sales';
 
@@ -331,7 +331,7 @@ const getFlux = (setStore, getStore, storageKey) => ({
         }
 
         try {
-            const updatedPizza = await updatePizzaInventory(pizzaId, payload);
+            const updatedPizza = await updatePizza(pizzaId, payload);
             setStore((prevStore) => {
                 const updatedPizzas = prevStore.pizzas.map((pizza) =>
                     pizza.id === pizzaId ? updatedPizza : pizza
@@ -350,6 +350,38 @@ const getFlux = (setStore, getStore, storageKey) => ({
                 ...prevStore,
                 appError: 'No pudimos actualizar el inventario de la pizza.',
             }));
+        }
+    },
+
+    savePizzaCatalog: async (pizzaId, payload) => {
+        if (typeof payload !== 'object') {
+            return { success: false };
+        }
+
+        try {
+            const savedPizza = pizzaId ? await updatePizza(pizzaId, payload) : await createPizza(payload);
+            setStore((prevStore) => {
+                const pizzaExists = prevStore.pizzas.some((pizza) => pizza.id === savedPizza.id);
+                const updatedPizzas = pizzaExists
+                    ? prevStore.pizzas.map((pizza) => (pizza.id === savedPizza.id ? savedPizza : pizza))
+                    : [...prevStore.pizzas, savedPizza].sort((a, b) => a.id - b.id);
+
+                return {
+                    ...prevStore,
+                    appError: null,
+                    pizzas: updatedPizzas,
+                    cart: syncCartWithPizzas(prevStore.cart, updatedPizzas),
+                };
+            });
+
+            return { success: true, pizza: savedPizza };
+        } catch (error) {
+            console.error('Error al guardar la pizza:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos guardar la pizza.',
+            }));
+            return { success: false };
         }
     },
 
@@ -390,52 +422,6 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: error.message || 'No pudimos abrir el comprobante de WhatsApp.',
-            }));
-            return { success: false };
-        }
-    },
-
-    markOrderReady: async (date, orderId) => {
-        try {
-            const statusResponse = await updateOrderStatus(date, orderId, 'listo_para_retirar');
-            setStore((prevStore) => ({
-                ...prevStore,
-                appError: null,
-                sales: mergeUpdatedOrderIntoSales(prevStore.sales, date, statusResponse.order),
-                lastCreatedOrder: syncLastCreatedOrder(prevStore.lastCreatedOrder, orderId, statusResponse.order, date),
-            }));
-
-            if (statusResponse.order.notify_whatsapp && statusResponse.order.receiver_phone) {
-                const whatsappResponse = await fetchOrderWhatsAppLink(date, orderId);
-                if (typeof window !== 'undefined') {
-                    window.open(whatsappResponse.url, '_blank', 'noopener,noreferrer');
-                }
-
-                return {
-                    success: true,
-                    notification: 'whatsapp',
-                    order: statusResponse.order,
-                };
-            }
-
-            if (statusResponse.order.use_vipper && statusResponse.order.vipper_code) {
-                return {
-                    success: true,
-                    notification: 'vipper',
-                    order: statusResponse.order,
-                };
-            }
-
-            return {
-                success: true,
-                notification: 'none',
-                order: statusResponse.order,
-            };
-        } catch (error) {
-            console.error('Error al marcar el pedido como listo:', error);
-            setStore((prevStore) => ({
-                ...prevStore,
-                appError: error.message || 'No pudimos marcar el pedido como listo.',
             }));
             return { success: false };
         }

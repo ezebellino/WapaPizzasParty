@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContext } from './store/AppContext';
+import CatalogEditor from './pages/CatalogEditor';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -38,6 +39,14 @@ const App = () => {
                             element={
                                 <ProtectedRoute>
                                     <SalesHistory />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/catalogo"
+                            element={
+                                <ProtectedRoute>
+                                    <CatalogEditor />
                                 </ProtectedRoute>
                             }
                         />

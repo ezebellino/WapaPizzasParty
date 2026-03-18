@@ -1,9 +1,14 @@
 from pydantic import BaseModel, Field, field_validator
 
 
-ORDER_STATUSES = {'procesado', 'en_preparacion', 'listo_para_retirar', 'entregado', 'cancelado'}
+ORDER_STATUSES = {'en_preparacion', 'entregado', 'cancelado'}
 USER_ROLES = {'admin', 'operator'}
 WHATSAPP_NOTIFICATION_STATUSES = {'no_solicitado', 'pendiente', 'simulado', 'enviado', 'fallido'}
+
+LEGACY_STATUS_MAP = {
+    'procesado': 'en_preparacion',
+    'listo_para_retirar': 'entregado',
+}
 
 
 def normalize_half_step(value: float, *, allow_zero: bool = False) -> float:
@@ -16,6 +21,14 @@ def normalize_half_step(value: float, *, allow_zero: bool = False) -> float:
             raise ValueError(f'El valor debe ser mayor o igual a 0 y avanzar en pasos de {step_label}.')
         raise ValueError(f'El valor debe ser mayor o igual a {step_label} y avanzar en pasos de {step_label}.')
 
+    return normalized
+
+
+def normalize_order_status(value: str) -> str:
+    normalized = value.strip().lower()
+    normalized = LEGACY_STATUS_MAP.get(normalized, normalized)
+    if normalized not in ORDER_STATUSES:
+        raise ValueError('Estado de pedido invalido.')
     return normalized
 
 
@@ -85,7 +98,24 @@ class Pizza(BaseModel):
         return normalize_half_step(value, allow_zero=True)
 
 
-class PizzaInventoryUpdate(BaseModel):
+class PizzaCreate(BaseModel):
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    price: int = Field(gt=0)
+    available: bool = Field(default=True)
+    stock: float = Field(default=0, ge=0)
+    low_stock_threshold: float = Field(default=3, ge=0)
+
+    @field_validator('stock', 'low_stock_threshold')
+    @classmethod
+    def validate_stock_values(cls, value: float) -> float:
+        return normalize_half_step(value, allow_zero=True)
+
+
+class PizzaUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1)
+    description: str | None = Field(default=None, min_length=1)
+    price: int | None = Field(default=None, gt=0)
     available: bool | None = None
     stock: float | None = Field(default=None, ge=0)
     low_stock_threshold: float | None = Field(default=None, ge=0)
@@ -156,16 +186,13 @@ class OrderStatusUpdate(BaseModel):
     @field_validator('status')
     @classmethod
     def validate_status(cls, status: str) -> str:
-        normalized_status = status.strip().lower()
-        if normalized_status not in ORDER_STATUSES:
-            raise ValueError('Estado de pedido invalido.')
-        return normalized_status
+        return normalize_order_status(status)
 
 
 class Order(OrderBase):
     order_id: str
     created_at: str
-    status: str = Field(default='procesado')
+    status: str = Field(default='en_preparacion')
     subtotal: int = Field(ge=0)
     total: int = Field(ge=0)
     whatsapp_notification_status: str = Field(default='pendiente')
@@ -177,10 +204,7 @@ class Order(OrderBase):
     @field_validator('status')
     @classmethod
     def validate_status(cls, status: str) -> str:
-        normalized_status = status.strip().lower()
-        if normalized_status not in ORDER_STATUSES:
-            raise ValueError('Estado de pedido invalido.')
-        return normalized_status
+        return normalize_order_status(status)
 
     @field_validator('whatsapp_notification_status')
     @classmethod

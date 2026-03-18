@@ -4,7 +4,6 @@ import { FaMinus, FaPlus, FaReceipt, FaStoreSlash, FaTruck } from 'react-icons/f
 import logoImage from '../assets/WapaPizzaParty.jpeg';
 import { AppContext } from '../store/AppContext';
 import {
-    ORDER_STATUS_OPTIONS,
     buildOpenOrders,
     buildStockAlerts,
     buildTreasuryStats,
@@ -94,33 +93,11 @@ const Home = () => {
         }
     };
 
-    const handleMarkReady = async (order) => {
-        const orderDate = order.date || today;
-        const result = await actions.markOrderReady(orderDate, order.order_id);
-        if (!result.success) {
-            return;
-        }
-
-        const notificationText =
-            result.notification === 'whatsapp'
-                ? 'Se abrio el WhatsApp con el aviso listo para enviar.'
-                : result.notification === 'vipper'
-                    ? `Llama el vipper ${result.order.vipper_code} para retirar el pedido.`
-                    : 'El pedido quedo marcado como listo para retirar.';
-
-        await Swal.fire({
-            icon: 'success',
-            title: 'Pedido listo',
-            text: notificationText,
-            confirmButtonText: 'Continuar',
-        });
-    };
-
     const handlePrintKitchenTicket = async (order) => {
         const orderDate = order.date || today;
         let orderToPrint = order;
 
-        if (order.status === 'procesado') {
+        if (order.status !== 'en_preparacion') {
             const result = await actions.startOrderPreparation(orderDate, order.order_id);
             if (!result.success) {
                 return;
@@ -488,15 +465,6 @@ const Home = () => {
                                                 Enviar WhatsApp
                                             </button>
                                         ) : null}
-                                        {store.lastCreatedOrder.status !== 'listo_para_retirar' && store.lastCreatedOrder.status !== 'entregado' ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleMarkReady(store.lastCreatedOrder)}
-                                                className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-success hover:border-success hover:bg-success/5"
-                                            >
-                                                Marcar pedido listo
-                                            </button>
-                                        ) : null}
                                     </div>
                                 </div>
                             </div>
@@ -531,7 +499,7 @@ const Home = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-2xl font-semibold text-text">Pedidos activos</h3>
-                                <p className="text-sm text-muted">Procesados, en preparacion o listos para retirar.</p>
+                                <p className="text-sm text-muted">Pedidos que siguen en cocina o pendientes de entrega.</p>
                             </div>
                             <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
                                 {openOrders.length}
@@ -549,9 +517,9 @@ const Home = () => {
                                                     {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
                                                 </p>
                                             </div>
-                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
-                                                    {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
-                                                </span>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
+                                                En preparacion
+                                            </span>
                                         </div>
                                         {order.notify_whatsapp ? (
                                             <p className="mt-2 text-xs uppercase tracking-wide text-muted">
@@ -564,15 +532,6 @@ const Home = () => {
                                             </p>
                                         ) : null}
                                         <p className="mt-3 text-sm font-medium text-text">{formatCurrency(order.total)}</p>
-                                        {order.status !== 'listo_para_retirar' ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleMarkReady(order)}
-                                                className="mt-3 rounded-2xl border border-primary/15 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-secondary hover:border-primary hover:text-primary"
-                                            >
-                                                Pedido listo
-                                            </button>
-                                        ) : null}
                                     </div>
                                 ))
                             ) : (

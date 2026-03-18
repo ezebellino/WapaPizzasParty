@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaCashRegister, FaChartLine, FaPizzaSlice, FaSignOutAlt } from 'react-icons/fa';
+import { FaCashRegister, FaChartLine, FaPizzaSlice, FaSignOutAlt, FaBoxes } from 'react-icons/fa';
 import { AppContext } from '../store/AppContext';
 import logoImage from '../assets/WapaPizzaParty.jpeg';
 import { calculateCartPizzas, formatPizzaQuantity } from '../utils/sales';
@@ -12,6 +12,7 @@ const Navbar = () => {
 
     const navItems = [
         { to: '/', label: 'Mostrador', icon: <FaCashRegister /> },
+        { to: '/catalogo', label: 'Catalogo', icon: <FaBoxes /> },
         { to: '/tesoreria', label: 'Tesoreria', icon: <FaChartLine /> },
     ];
 

@@ -25,9 +25,7 @@ BUSINESS_INSTAGRAM = os.getenv('WAPA_INSTAGRAM', 'https://www.instagram.com/wapa
 BUSINESS_FACEBOOK = os.getenv('WAPA_FACEBOOK', 'https://www.facebook.com/SoleMoranWapaPizzaParty').strip()
 
 STATUS_MESSAGES = {
-    'procesado': 'Hola {receiver_name}, tu pedido en WapaPizzas fue procesado.',
     'en_preparacion': 'Hola {receiver_name}, tu pedido en WapaPizzas ya esta en preparacion.',
-    'listo_para_retirar': 'Hola {receiver_name}, tu pedido en WapaPizzas esta listo para retirar.',
     'entregado': 'Hola {receiver_name}, gracias por tu compra en WapaPizzas.',
     'cancelado': 'Hola {receiver_name}, tu pedido en WapaPizzas fue cancelado. Si necesitas ayuda, escribenos.',
 }
@@ -108,8 +106,6 @@ def build_whatsapp_message(order: Order) -> str:
     order_lines = '\n'.join(build_order_lines(order))
     shipping_label = f"${format_currency(order.shipping_cost)}" if order.include_shipping else '$0'
     notes_line = f"Observaciones: {order.notes}" if order.notes else 'Observaciones: Sin observaciones.'
-    pickup_hint = 'Puedes retirarlo coordinando con WapaPizzas.' if order.status == 'listo_para_retirar' else ''
-
     message_parts = [
         intro,
         '',
@@ -127,9 +123,6 @@ def build_whatsapp_message(order: Order) -> str:
         f"Total: ${format_currency(order.total)}",
         notes_line,
     ]
-
-    if pickup_hint:
-        message_parts.extend(['', pickup_hint])
 
     message_parts.extend([
         '',

@@ -21,7 +21,8 @@ from .schemas import (
     OrderCreate,
     OrderStatusUpdate,
     Pizza,
-    PizzaInventoryUpdate,
+    PizzaCreate,
+    PizzaUpdate,
     SaleItem,
     SalesDay,
     SessionUser,
@@ -236,7 +237,7 @@ def build_order_from_payload(payload: OrderCreate) -> Order:
     return Order(
         order_id=f'order-{timestamp.strftime("%Y%m%d%H%M%S%f")}',
         created_at=timestamp.isoformat(),
-        status='procesado',
+        status='en_preparacion',
         receiver_name=payload.receiver_name.strip(),
         receiver_phone=payload.receiver_phone.strip(),
         payment_method=payload.payment_method.strip(),
@@ -540,10 +541,32 @@ async def get_pizzas(_: SessionUser = Depends(get_current_user)) -> list[Pizza]:
     return load_pizzas()
 
 
+@app.post('/pizzas', response_model=Pizza)
+async def crear_pizza(
+    payload: PizzaCreate,
+    _: SessionUser = Depends(require_role('admin', 'operator')),
+) -> Pizza:
+    pizzas = load_pizzas()
+    next_id = max((pizza.id for pizza in pizzas), default=0) + 1
+    nueva_pizza = Pizza(
+        id=next_id,
+        name=payload.name.strip(),
+        description=payload.description.strip(),
+        price=payload.price,
+        available=payload.available,
+        stock=payload.stock,
+        low_stock_threshold=payload.low_stock_threshold,
+    )
+    pizzas.append(nueva_pizza)
+    save_pizzas(pizzas)
+    write_log('info', 'Pizza creada', pizza_id=nueva_pizza.id, pizza=nueva_pizza.name, price=nueva_pizza.price)
+    return nueva_pizza
+
+
 @app.patch('/pizzas/{pizza_id}', response_model=Pizza)
-async def actualizar_inventario_pizza(
+async def actualizar_pizza(
     pizza_id: int,
-    payload: PizzaInventoryUpdate,
+    payload: PizzaUpdate,
     _: SessionUser = Depends(require_role('admin', 'operator')),
 ) -> Pizza:
     pizzas = load_pizzas()
@@ -553,6 +576,12 @@ async def actualizar_inventario_pizza(
             continue
 
         updates = {}
+        if payload.name is not None:
+            updates['name'] = payload.name.strip()
+        if payload.description is not None:
+            updates['description'] = payload.description.strip()
+        if payload.price is not None:
+            updates['price'] = payload.price
         if payload.available is not None:
             updates['available'] = payload.available
         if payload.stock is not None:
@@ -564,7 +593,7 @@ async def actualizar_inventario_pizza(
         updated_pizza = pizza.model_copy(update=updates)
         pizzas[index] = updated_pizza
         save_pizzas(pizzas)
-        write_log('info', 'Inventario de pizza actualizado', pizza_id=updated_pizza.id, pizza=updated_pizza.name, stock=updated_pizza.stock)
+        write_log('info', 'Pizza actualizada', pizza_id=updated_pizza.id, pizza=updated_pizza.name, stock=updated_pizza.stock, price=updated_pizza.price)
         return updated_pizza
 
     raise HTTPException(status_code=404, detail='No encontramos la pizza solicitada.')

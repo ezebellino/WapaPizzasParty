@@ -3,7 +3,6 @@ import Swal from 'sweetalert2';
 import { AppContext } from '../store/AppContext';
 import {
     buildDailyPerformance,
-    ORDER_STATUS_OPTIONS,
     buildPaymentBreakdown,
     buildStatusBreakdown,
     buildStockAlerts,
@@ -54,31 +53,10 @@ const SalesHistory = () => {
     const maxRevenue = Math.max(...dailyPerformance.map((item) => item.revenue), 1);
     const maxPizzas = Math.max(...dailyPerformance.map((item) => item.pizzas), 1);
 
-    const handleMarkReady = async (order) => {
-        const result = await actions.markOrderReady(order.date, order.order_id);
-        if (!result.success) {
-            return;
-        }
-
-        const notificationText =
-            result.notification === 'whatsapp'
-                ? 'Se abrio el WhatsApp con el comprobante listo para enviar.'
-                : result.notification === 'vipper'
-                    ? `Llama el vipper ${result.order.vipper_code} para avisar que ya puede retirar.`
-                    : 'El pedido quedo marcado como listo para retirar.';
-
-        await Swal.fire({
-            icon: 'success',
-            title: 'Pedido listo',
-            text: notificationText,
-            confirmButtonText: 'Continuar',
-        });
-    };
-
     const handlePrintKitchenTicket = async (order) => {
         let orderToPrint = order;
 
-        if (order.status === 'procesado') {
+        if (order.status !== 'en_preparacion') {
             const result = await actions.startOrderPreparation(order.date, order.order_id);
             if (!result.success) {
                 return;
@@ -99,6 +77,23 @@ const SalesHistory = () => {
         }
 
         printKitchenTicket(orderToPrint);
+    };
+
+    const handleCloseOrder = async (order, nextStatus) => {
+        const result = await actions.updateOrderStatus(order.date, order.order_id, nextStatus);
+        if (!result.success) {
+            return;
+        }
+
+        await Swal.fire({
+            icon: nextStatus === 'cancelado' ? 'warning' : 'success',
+            title: nextStatus === 'cancelado' ? 'Pedido cancelado' : 'Pedido entregado',
+            text:
+                nextStatus === 'cancelado'
+                    ? 'El pedido quedo registrado como cancelado.'
+                    : 'El pedido quedo cerrado como entregado.',
+            confirmButtonText: 'Continuar',
+        });
     };
 
     return (
@@ -390,7 +385,11 @@ const SalesHistory = () => {
                                             </div>
                                             <div className="text-right">
                                                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
-                                                    {ORDER_STATUS_OPTIONS.find((option) => option.value === order.status)?.label ?? order.status}
+                                                    {order.status === 'en_preparacion'
+                                                        ? 'En preparacion'
+                                                        : order.status === 'entregado'
+                                                            ? 'Entregado'
+                                                            : 'Cancelado'}
                                                 </span>
                                                 <p className="mt-2 text-sm font-semibold text-text">{formatCurrency(order.total)}</p>
                                             </div>
@@ -415,13 +414,22 @@ const SalesHistory = () => {
                                                 >
                                                     Imprimir comanda
                                                 </button>
-                                                {order.status !== 'listo_para_retirar' && order.status !== 'entregado' ? (
+                                                {order.status === 'en_preparacion' ? (
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleMarkReady(order)}
+                                                        onClick={() => handleCloseOrder(order, 'entregado')}
                                                         className="rounded-2xl border border-success/30 bg-white px-4 py-2 text-sm font-semibold text-success hover:border-success hover:bg-success/5"
                                                     >
-                                                        Marcar listo
+                                                        Marcar entregado
+                                                    </button>
+                                                ) : null}
+                                                {order.status === 'en_preparacion' ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCloseOrder(order, 'cancelado')}
+                                                        className="rounded-2xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:border-red-400 hover:bg-red-50"
+                                                    >
+                                                        Cancelar pedido
                                                     </button>
                                                 ) : null}
                                                 {order.receiver_phone ? (
@@ -433,17 +441,6 @@ const SalesHistory = () => {
                                                         Abrir WhatsApp
                                                     </button>
                                                 ) : null}
-                                                <select
-                                                    value={order.status}
-                                                    onChange={(event) => actions.updateOrderStatus(order.date, order.order_id, event.target.value)}
-                                                    className="rounded-2xl border border-primary/15 bg-white px-4 py-2 text-sm text-text outline-none transition focus:border-primary"
-                                                >
-                                                    {ORDER_STATUS_OPTIONS.map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
                                             </div>
                                         </div>
                                     </div>

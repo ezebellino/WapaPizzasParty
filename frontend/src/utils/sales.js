@@ -1,9 +1,7 @@
 export const HALF_PIZZA_STEP = 0.5;
 
 export const ORDER_STATUS_OPTIONS = [
-    { value: 'procesado', label: 'Procesado' },
     { value: 'en_preparacion', label: 'En preparacion' },
-    { value: 'listo_para_retirar', label: 'Listo para retirar' },
     { value: 'entregado', label: 'Entregado' },
     { value: 'cancelado', label: 'Cancelado' },
 ];
@@ -122,11 +120,7 @@ export const buildDailyPerformance = (salesDays) =>
 
 export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
-        .filter((order) =>
-            order.status === 'procesado'
-            || order.status === 'en_preparacion'
-            || order.status === 'listo_para_retirar'
-        )
+        .filter((order) => order.status === 'en_preparacion')
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
 export const buildPaymentBreakdown = (salesDays) => {
@@ -171,12 +165,8 @@ export const buildStatusBreakdown = (salesDays) => {
 
 export const getStatusBadgeClass = (status) => {
     switch (status) {
-        case 'procesado':
-            return 'bg-accent/15 text-secondary';
         case 'en_preparacion':
             return 'bg-primary/15 text-primary';
-        case 'listo_para_retirar':
-            return 'bg-success/15 text-success';
         case 'entregado':
             return 'bg-emerald-100 text-emerald-700';
         case 'cancelado':

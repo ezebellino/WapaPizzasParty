@@ -99,6 +99,8 @@ Estado actual:
 - Priorizar:
   ventas del dia, total cobrado, medios de pago y cantidad de pizzas.
 - Sacar complejidad de estados manuales que no aporten al nuevo flujo.
+- Dejar solo estados operativos simples:
+  `en_preparacion`, `entregado` y `cancelado`.
 - Conservar exportacion y reportes utiles sin volver la pantalla pesada.
 
 Estado actual:
@@ -107,6 +109,7 @@ Estado actual:
 - Tesoreria ya permite filtrar por rango de fechas.
 - Ya existe exportacion CSV del rango elegido.
 - Ya se agregaron visuales simples de facturacion y produccion por dia.
+- Ya se redujo el flujo de estados a una operacion mas realista para mostrador.
 - El siguiente paso es profundizar metricas sin perder velocidad de uso.
 
 ### Etapa 6 - Aplicacion de escritorio
