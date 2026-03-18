@@ -9,6 +9,7 @@ Hoy la app ya esta orientada a la operatoria real del local: toma de pedidos rap
 - Estado: producto operativo local en evolucion.
 - Enfoque actual: una sola PC, flujo simple, sin pasos manuales innecesarios.
 - Plan vigente: ver [PLAN_WAPAPIZZAPARTY_LOCAL.md](./PLAN_WAPAPIZZAPARTY_LOCAL.md).
+- Guia de entrega: ver [GUIA_ENTREGA_WAPAPIZZAPARTY.md](./GUIA_ENTREGA_WAPAPIZZAPARTY.md).
 
 ## Lo que ya hace la app
 
