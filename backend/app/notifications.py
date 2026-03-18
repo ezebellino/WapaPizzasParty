@@ -110,7 +110,7 @@ def build_whatsapp_message(order: Order) -> str:
         intro,
         '',
         'Comprobante de pedido',
-        f"Pedido: {order.order_id}",
+        f"Pedido: # {order.order_number}",
         f"Cliente: {order.receiver_name}",
         f"Telefono: {order.receiver_phone or 'No informado'}",
         f"Medio de pago: {order.payment_method.replace('_', ' ')}",

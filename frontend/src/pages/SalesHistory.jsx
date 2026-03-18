@@ -11,6 +11,7 @@ import {
     buildTopProducts,
     buildTreasuryStats,
     formatCurrency,
+    formatOrderLabel,
     formatPizzaQuantity,
     formatSaleItemLabel,
     formatStockValue,
@@ -458,7 +459,7 @@ const SalesHistory = () => {
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
-                                                <p className="text-sm text-muted">{order.date} - {order.payment_method}</p>
+                                                <p className="text-sm text-muted">{formatOrderLabel(order)} - {order.date} - {order.payment_method}</p>
                                                 <p className="mt-1 text-xs uppercase tracking-wide text-muted">
                                                     Aviso: {getOrderAlertLabel(order)}
                                                 </p>

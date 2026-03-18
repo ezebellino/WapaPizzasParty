@@ -135,6 +135,23 @@ O:
 
 El acceso directo queda configurado para abrir la app en modo oculto, con el backend corriendo en segundo plano.
 
+### Paquete portable para otra PC
+
+Para armar una version portable con Python incluido:
+
+```powershell
+.\scripts\build-portable-package.ps1
+```
+
+Si queres dejarla lista para enviar por pendrive, Drive o mail en un `.zip`:
+
+```powershell
+.\scripts\build-portable-package.ps1 -CreateZip
+```
+
+El resultado queda en `portable-build\WapaPizzaParty`.
+Durante el armado, el proyecto descarga y reutiliza el runtime embeddable oficial de Python 3.12 en `runtime-cache\`.
+
 ## Variables de entorno
 
 Crea `backend/.env` tomando como base `backend/.env.example`.

@@ -1,5 +1,4 @@
 param(
-    [switch]$BuildFrontend,
     [switch]$NoBrowser,
     [switch]$SameWindow,
     [switch]$Background
@@ -9,10 +8,9 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $backendPath = Join-Path $projectRoot 'backend'
-$frontendPath = Join-Path $projectRoot 'frontend'
-$frontendDist = Join-Path $frontendPath 'dist'
+$pythonHome = Join-Path $projectRoot 'runtime\python'
+$pythonPath = Join-Path $pythonHome 'python.exe'
 $appUrl = 'http://127.0.0.1:8000'
-$backendCommand = "..\venv\Scripts\uvicorn app.main:app --host 127.0.0.1 --port 8000"
 
 function Stop-ExistingBackendOnPort8000 {
     try {
@@ -34,15 +32,11 @@ function Stop-ExistingBackendOnPort8000 {
     }
 }
 
-if ($BuildFrontend -or -not (Test-Path $frontendDist)) {
-    Write-Host "Compilando frontend para modo local..." -ForegroundColor Cyan
-    Push-Location $frontendPath
-    try {
-        npm.cmd run build
-    } finally {
-        Pop-Location
-    }
+if (-not (Test-Path $pythonPath)) {
+    throw "No se encontro el runtime portable de Python en $pythonPath"
 }
+
+$backendCommand = "& '$pythonPath' -m uvicorn app.main:app --host 127.0.0.1 --port 8000"
 
 Stop-ExistingBackendOnPort8000
 
@@ -77,8 +71,4 @@ if ($Background) {
 if (-not $NoBrowser) {
     Start-Sleep -Seconds 2
     Start-Process $appUrl
-}
-
-if (-not $Background) {
-    Write-Host "WapaPizzaParty local iniciada en $appUrl" -ForegroundColor Green
 }

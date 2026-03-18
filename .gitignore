@@ -22,3 +22,5 @@ backend/app/users.json
 backend/app/logs/
 backend/.env
 .env
+portable-build/
+runtime-cache/

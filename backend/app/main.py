@@ -168,6 +168,13 @@ def refresh_sales_day(day: SalesDay) -> SalesDay:
     return day
 
 
+def get_next_order_number(day: SalesDay | None) -> int:
+    if not day or not day.orders:
+        return 1
+
+    return max(order.order_number for order in day.orders) + 1
+
+
 def load_users() -> list[User]:
     try:
         with USERS_FILE.open('r', encoding='utf-8') as file:
@@ -229,13 +236,14 @@ def require_role(*roles: str):
     return dependency
 
 
-def build_order_from_payload(payload: OrderCreate) -> Order:
+def build_order_from_payload(payload: OrderCreate, order_number: int) -> Order:
     subtotal = calculate_subtotal(payload.sales)
     shipping_cost = payload.shipping_cost if payload.include_shipping else 0
     timestamp = datetime.now()
 
     return Order(
         order_id=f'order-{timestamp.strftime("%Y%m%d%H%M%S%f")}',
+        order_number=order_number,
         created_at=timestamp.isoformat(),
         status='en_preparacion',
         receiver_name=payload.receiver_name.strip(),
@@ -294,6 +302,7 @@ def build_legacy_order(raw_day: dict) -> Order:
 
     return Order(
         order_id=f"legacy-{raw_day.get('date', 'sin-fecha')}-1",
+        order_number=1,
         created_at=f"{raw_day.get('date', datetime.now().strftime('%Y-%m-%d'))}T00:00:00",
         status='entregado',
         receiver_name='Registro legado',
@@ -316,7 +325,13 @@ def normalize_sales_day(raw_day: dict) -> SalesDay:
     raw_orders = raw_day.get('orders')
 
     if raw_orders:
-        orders = [Order.model_validate(order) for order in raw_orders]
+        orders = [
+            Order.model_validate({
+                **order,
+                'order_number': order.get('order_number', index + 1),
+            })
+            for index, order in enumerate(raw_orders)
+        ]
     else:
         orders = [build_legacy_order(raw_day)] if raw_day.get('sales') else []
 
@@ -447,11 +462,11 @@ async def registrar_venta(
     pizzas = load_pizzas()
     updated_pizzas = reduce_stock_for_order(pizzas, venta.sales)
     ventas = cargar_ventas()
-    nueva_orden = sync_order_whatsapp_status(build_order_from_payload(venta))
     fecha_actual = datetime.now().strftime('%Y-%m-%d')
 
     for dia in ventas:
         if dia.date == fecha_actual:
+            nueva_orden = sync_order_whatsapp_status(build_order_from_payload(venta, get_next_order_number(dia)))
             dia.orders.append(nueva_orden)
             refresh_sales_day(dia)
             guardar_ventas(ventas)
@@ -462,6 +477,7 @@ async def registrar_venta(
                 'order': nueva_orden.model_dump(),
             }
 
+    nueva_orden = sync_order_whatsapp_status(build_order_from_payload(venta, 1))
     nuevo_dia = refresh_sales_day(SalesDay(date=fecha_actual, orders=[nueva_orden]))
     ventas.append(nuevo_dia)
     guardar_ventas(ventas)

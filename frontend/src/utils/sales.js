@@ -39,6 +39,14 @@ export const formatPizzaQuantity = (value) => {
 
 export const formatSaleItemLabel = (item) => `${formatPizzaQuantity(item.quantity)} de ${item.name}`;
 
+export const formatOrderLabel = (order) => {
+    if (order?.order_number) {
+        return `Pedido # ${order.order_number}`;
+    }
+
+    return order?.order_id || '-';
+};
+
 export const getOrderAlertLabel = (order) => {
     if (order.use_vipper && order.vipper_code) {
         return `Vipper ${order.vipper_code}`;
@@ -348,7 +356,7 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
 
     const rows = orders.map((order) => [
         order.date,
-        order.order_id,
+        formatOrderLabel(order),
         order.receiver_name,
         order.receiver_phone,
         order.payment_method,
@@ -425,7 +433,7 @@ const buildOrderRowsHtml = (orders) => {
             (order) => `
                 <tr>
                     <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.date)}</td>
-                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.order_id)}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(formatOrderLabel(order))}</td>
                     <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.receiver_name)}</td>
                     <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.sales.map((item) => formatSaleItemLabel(item)).join(' + '))}</td>
                     <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.payment_method.replaceAll('_', ' '))}</td>
@@ -900,7 +908,7 @@ export const printKitchenTicket = (order) => {
     openedWindow.document.write(`
         <html>
             <head>
-                <title>Comanda ${order.order_id}</title>
+                <title>Comanda ${formatOrderLabel(order)}</title>
                 <meta charset="UTF-8" />
             </head>
             <body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 18px; color: #3e2330; background: #fffdfd;">
@@ -912,7 +920,7 @@ export const printKitchenTicket = (order) => {
                     </div>
                     <div style="padding: 18px;">
                         <div style="display:grid; gap:8px; padding-bottom:16px; border-bottom: 1px dashed #f3bfd8;">
-                            <p style="margin:0;"><strong>Pedido:</strong> ${order.order_id}</p>
+                            <p style="margin:0;"><strong>Pedido:</strong> ${formatOrderLabel(order)}</p>
                             <p style="margin:0;"><strong>Hora:</strong> ${createdAt}</p>
                             <p style="margin:0;"><strong>Cliente:</strong> ${order.receiver_name}</p>
                             <p style="margin:0;"><strong>Aviso:</strong> ${alertLabel}</p>

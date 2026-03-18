@@ -11,6 +11,7 @@ import {
     calculateCartSubtotal,
     calculateCartTotal,
     formatCurrency,
+    formatOrderLabel,
     formatPizzaQuantity,
     formatSaleItemLabel,
     formatStockValue,
@@ -442,7 +443,7 @@ const Home = () => {
                                 <div className="space-y-3">
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                         <span>
-                                            Ultimo pedido guardado: {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
+                                            Ultimo pedido guardado: {formatOrderLabel(store.lastCreatedOrder)} - {store.lastCreatedOrder.receiver_name} - {formatCurrency(store.lastCreatedOrder.total)}
                                         </span>
                                         <span className="text-xs font-semibold uppercase tracking-wide text-success">
                                             {getOrderAlertLabel(store.lastCreatedOrder)}
@@ -514,7 +515,7 @@ const Home = () => {
                                             <div>
                                                 <p className="font-semibold text-text">{order.receiver_name}</p>
                                                 <p className="text-sm text-muted">
-                                                    {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
+                                                    {formatOrderLabel(order)} - {order.date} - {formatPizzaQuantity(order.sales.reduce((sum, item) => sum + item.quantity, 0))}
                                                 </p>
                                             </div>
                                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>

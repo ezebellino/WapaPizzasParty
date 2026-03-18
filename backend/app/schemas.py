@@ -191,6 +191,7 @@ class OrderStatusUpdate(BaseModel):
 
 class Order(OrderBase):
     order_id: str
+    order_number: int = Field(default=1, ge=1)
     created_at: str
     status: str = Field(default='en_preparacion')
     subtotal: int = Field(ge=0)
