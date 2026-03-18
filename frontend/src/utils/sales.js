@@ -168,6 +168,73 @@ export const buildMonthlyPerformance = (salesDays) => {
     return [...monthlyMap.values()].sort((a, b) => a.period.localeCompare(b.period));
 };
 
+const shiftDate = (dateString, daysDelta) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + daysDelta);
+    return date.toISOString().slice(0, 10);
+};
+
+const getDateRangeBounds = (salesDays, filters = {}) => {
+    if (filters.startDate || filters.endDate) {
+        return {
+            start: filters.startDate || null,
+            end: filters.endDate || null,
+        };
+    }
+
+    if (salesDays.length === 0) {
+        return { start: null, end: null };
+    }
+
+    const ordered = [...salesDays].sort((a, b) => a.date.localeCompare(b.date));
+    return {
+        start: ordered[0].date,
+        end: ordered[ordered.length - 1].date,
+    };
+};
+
+export const buildPreviousPeriodComparison = (allSalesDays, filteredSalesDays, filters = {}) => {
+    const bounds = getDateRangeBounds(filteredSalesDays, filters);
+    if (!bounds.start || !bounds.end) {
+        return null;
+    }
+
+    const [startYear, startMonth, startDay] = bounds.start.split('-').map(Number);
+    const [endYear, endMonth, endDay] = bounds.end.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+    const rangeDays = Math.max(Math.round((end - start) / 86400000) + 1, 1);
+    const previousStart = shiftDate(bounds.start, -rangeDays);
+    const previousEnd = shiftDate(bounds.start, -1);
+
+    const previousDays = allSalesDays.filter((day) => day.date >= previousStart && day.date <= previousEnd);
+    const currentStats = buildTreasuryStats(filteredSalesDays);
+    const previousStats = buildTreasuryStats(previousDays);
+
+    const buildDelta = (current, previous) => {
+        const difference = current - previous;
+        const percent = previous > 0 ? (difference / previous) * 100 : current > 0 ? 100 : 0;
+        return {
+            current,
+            previous,
+            difference,
+            percent,
+        };
+    };
+
+    return {
+        previousStart,
+        previousEnd,
+        currentLabel: `${bounds.start} a ${bounds.end}`,
+        previousLabel: `${previousStart} a ${previousEnd}`,
+        revenue: buildDelta(currentStats.totalRevenue, previousStats.totalRevenue),
+        pizzas: buildDelta(currentStats.totalPizzas, previousStats.totalPizzas),
+        orders: buildDelta(currentStats.totalOrders, previousStats.totalOrders),
+        averageTicket: buildDelta(currentStats.averageTicket, previousStats.averageTicket),
+    };
+};
+
 export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
         .filter((order) => order.status === 'en_preparacion')
@@ -382,7 +449,19 @@ const buildSimpleListHtml = (items, formatter, emptyLabel) => {
     `;
 };
 
-export const openTreasuryPdfReport = (salesDays, filters = {}) => {
+const formatDeltaText = (delta, formatter = (value) => value) => {
+    const direction = delta.difference > 0 ? 'Suba' : delta.difference < 0 ? 'Baja' : 'Sin cambio';
+    const absolute = formatter(Math.abs(delta.difference));
+    const percent = `${Math.abs(delta.percent).toFixed(1).replace('.', ',')}%`;
+
+    if (delta.difference === 0) {
+        return `${direction} frente al periodo anterior.`;
+    }
+
+    return `${direction} de ${absolute} (${percent}) frente al periodo anterior.`;
+};
+
+export const openTreasuryPdfReport = (salesDays, filters = {}, allSalesDays = salesDays) => {
     if (typeof window === 'undefined') {
         return;
     }
@@ -399,6 +478,7 @@ export const openTreasuryPdfReport = (salesDays, filters = {}) => {
     const topProducts = buildTopProducts(salesDays).slice(0, 10);
     const paymentBreakdown = buildPaymentBreakdown(salesDays);
     const statusBreakdown = buildStatusBreakdown(salesDays);
+    const comparison = buildPreviousPeriodComparison(allSalesDays, salesDays, filters);
     const orders = [...stats.orders].sort((a, b) => {
         const dateDiff = new Date(b.created_at) - new Date(a.created_at);
         if (!Number.isNaN(dateDiff) && dateDiff !== 0) {
@@ -495,6 +575,36 @@ export const openTreasuryPdfReport = (salesDays, filters = {}) => {
                         color: #8c6676;
                         font-size: 13px;
                     }
+                    .highlight-grid {
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 12px;
+                    }
+                    .highlight {
+                        border: 1px solid #f3bfd8;
+                        border-radius: 18px;
+                        padding: 14px;
+                        background: linear-gradient(180deg, #fffdfd 0%, #fff5f9 100%);
+                    }
+                    .highlight p {
+                        margin: 0;
+                    }
+                    .highlight .label {
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        color: #8c6676;
+                    }
+                    .highlight .value {
+                        margin-top: 8px;
+                        font-size: 22px;
+                        font-weight: 700;
+                    }
+                    .highlight .delta {
+                        margin-top: 6px;
+                        font-size: 12px;
+                        color: #8c6676;
+                    }
                     .grid-2 {
                         display: grid;
                         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -586,6 +696,43 @@ export const openTreasuryPdfReport = (salesDays, filters = {}) => {
                             <p class="metric-label">Ticket promedio</p>
                             <p class="metric-value">${escapeHtml(formatCurrency(stats.averageTicket))}</p>
                         </div>
+                    </section>
+
+                    <section class="section">
+                        <h2>Lectura ejecutiva</h2>
+                        <p class="section-subtitle">Comparacion automatica contra el periodo inmediatamente anterior.</p>
+                        ${
+                            comparison
+                                ? `
+                                    <p style="margin:0 0 14px; color:#8c6676;">
+                                        Periodo actual: <strong>${escapeHtml(comparison.currentLabel)}</strong><br />
+                                        Periodo anterior: <strong>${escapeHtml(comparison.previousLabel)}</strong>
+                                    </p>
+                                    <div class="highlight-grid">
+                                        <div class="highlight">
+                                            <p class="label">Facturacion</p>
+                                            <p class="value">${escapeHtml(formatCurrency(comparison.revenue.current))}</p>
+                                            <p class="delta">${escapeHtml(formatDeltaText(comparison.revenue, formatCurrency))}</p>
+                                        </div>
+                                        <div class="highlight">
+                                            <p class="label">Pedidos</p>
+                                            <p class="value">${comparison.orders.current}</p>
+                                            <p class="delta">${escapeHtml(formatDeltaText(comparison.orders))}</p>
+                                        </div>
+                                        <div class="highlight">
+                                            <p class="label">Pizzas</p>
+                                            <p class="value">${escapeHtml(formatPizzaQuantity(comparison.pizzas.current))}</p>
+                                            <p class="delta">${escapeHtml(formatDeltaText(comparison.pizzas, formatPizzaQuantity))}</p>
+                                        </div>
+                                        <div class="highlight">
+                                            <p class="label">Ticket promedio</p>
+                                            <p class="value">${escapeHtml(formatCurrency(comparison.averageTicket.current))}</p>
+                                            <p class="delta">${escapeHtml(formatDeltaText(comparison.averageTicket, formatCurrency))}</p>
+                                        </div>
+                                    </div>
+                                `
+                                : `<p style="margin:0; color:#8c6676;">Todavia no hay rango suficiente para comparar periodos.</p>`
+                        }
                     </section>
 
                     <section class="grid-2">

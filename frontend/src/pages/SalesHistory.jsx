@@ -5,6 +5,7 @@ import {
     buildDailyPerformance,
     buildMonthlyPerformance,
     buildPaymentBreakdown,
+    buildPreviousPeriodComparison,
     buildStatusBreakdown,
     buildStockAlerts,
     buildTopProducts,
@@ -48,6 +49,7 @@ const SalesHistory = () => {
     const stockAlerts = buildStockAlerts(store.pizzas).slice(0, 6);
     const paymentBreakdown = buildPaymentBreakdown(filteredDays);
     const statusBreakdown = buildStatusBreakdown(filteredDays);
+    const comparison = buildPreviousPeriodComparison(store.sales, filteredDays, { startDate, endDate });
     const recentOrders = [...stats.orders]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 8);
@@ -142,7 +144,7 @@ const SalesHistory = () => {
                         </button>
                         <button
                             type="button"
-                            onClick={() => openTreasuryPdfReport(filteredDays, { startDate, endDate })}
+                            onClick={() => openTreasuryPdfReport(filteredDays, { startDate, endDate }, store.sales)}
                             className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
                         >
                             Exportar PDF
@@ -183,6 +185,43 @@ const SalesHistory = () => {
                         <p className="mt-2 text-3xl font-semibold text-text">{monthlyPerformance.length}</p>
                     </div>
                 </div>
+
+                {comparison ? (
+                    <div className="mt-4 grid gap-4 xl:grid-cols-4">
+                        <div className="rounded-2xl border border-primary/10 bg-white p-4">
+                            <p className="text-sm text-muted">Comparativa facturacion</p>
+                            <p className="mt-2 text-2xl font-semibold text-text">{formatCurrency(comparison.revenue.current)}</p>
+                            <p className="mt-1 text-sm text-muted">
+                                {comparison.revenue.difference === 0
+                                    ? 'Sin cambio frente al periodo anterior'
+                                    : `${comparison.revenue.difference > 0 ? 'Sube' : 'Baja'} ${formatCurrency(Math.abs(comparison.revenue.difference))}`}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-primary/10 bg-white p-4">
+                            <p className="text-sm text-muted">Comparativa pedidos</p>
+                            <p className="mt-2 text-2xl font-semibold text-text">{comparison.orders.current}</p>
+                            <p className="mt-1 text-sm text-muted">
+                                {comparison.orders.difference === 0
+                                    ? 'Sin cambio frente al periodo anterior'
+                                    : `${comparison.orders.difference > 0 ? 'Suben' : 'Bajan'} ${Math.abs(comparison.orders.difference)} pedidos`}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-primary/10 bg-white p-4">
+                            <p className="text-sm text-muted">Comparativa pizzas</p>
+                            <p className="mt-2 text-2xl font-semibold text-text">{formatPizzaQuantity(comparison.pizzas.current)}</p>
+                            <p className="mt-1 text-sm text-muted">
+                                {comparison.pizzas.difference === 0
+                                    ? 'Sin cambio frente al periodo anterior'
+                                    : `${comparison.pizzas.difference > 0 ? 'Suben' : 'Bajan'} ${formatPizzaQuantity(Math.abs(comparison.pizzas.difference))}`}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-primary/10 bg-white p-4">
+                            <p className="text-sm text-muted">Periodo comparado</p>
+                            <p className="mt-2 text-sm font-semibold text-text">{comparison.previousLabel}</p>
+                            <p className="mt-1 text-sm text-muted">Base usada para la lectura ejecutiva.</p>
+                        </div>
+                    </div>
+                ) : null}
             </section>
 
             <section className="grid gap-6 xl:grid-cols-2">
