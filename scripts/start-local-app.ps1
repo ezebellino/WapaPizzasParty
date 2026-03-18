@@ -1,7 +1,8 @@
 param(
     [switch]$BuildFrontend,
     [switch]$NoBrowser,
-    [switch]$SameWindow
+    [switch]$SameWindow,
+    [switch]$Background
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,15 +37,26 @@ if ($SameWindow) {
     exit 0
 }
 
-Start-Process powershell -ArgumentList @(
-    '-NoExit',
+$backendArgumentList = @(
     '-Command',
     "Set-Location '$backendPath'; $backendCommand"
 )
+
+if ($Background) {
+    Start-Process powershell -WindowStyle Hidden -ArgumentList $backendArgumentList
+} else {
+    Start-Process powershell -ArgumentList @(
+        '-NoExit',
+        '-Command',
+        "Set-Location '$backendPath'; $backendCommand"
+    )
+}
 
 if (-not $NoBrowser) {
     Start-Sleep -Seconds 2
     Start-Process $appUrl
 }
 
-Write-Host "WapaPizzaParty local iniciada en $appUrl" -ForegroundColor Green
+if (-not $Background) {
+    Write-Host "WapaPizzaParty local iniciada en $appUrl" -ForegroundColor Green
+}

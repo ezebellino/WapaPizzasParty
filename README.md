@@ -101,6 +101,12 @@ Para usar la app como sistema local del negocio:
 .\scripts\start-local-app.ps1
 ```
 
+Si queres abrirla con el backend en segundo plano y sin ventana visible de PowerShell:
+
+```powershell
+.\scripts\start-local-app.ps1 -Background
+```
+
 O:
 
 ```bat
@@ -126,6 +132,8 @@ O:
 ```bat
 .\scripts\create-desktop-shortcut.cmd
 ```
+
+El acceso directo queda configurado para abrir la app en modo oculto, con el backend corriendo en segundo plano.
 
 ## Variables de entorno
 
