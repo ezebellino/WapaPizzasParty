@@ -1,77 +1,136 @@
 # WapaPizzaParty
 
-Aplicacion en desarrollo para la gestion simple de una pizzeria y servicio de pizza party.
+Aplicacion local para mostrador, cocina y seguimiento comercial de una pizzeria, pensada para funcionar en una sola PC del negocio.
 
-Hoy el proyecto ya permite mostrar pizzas, armar un carrito, registrar ventas y consultar historial por fecha. La siguiente etapa del trabajo esta orientada a ordenar la base tecnica para que el producto pueda crecer con menos deuda y una estructura mas clara.
+Hoy la app ya esta orientada a la operatoria real del local: toma de pedidos rapida, comanda automatica para cocina, avisos al cliente, editor interno de pizzas, tesoreria con indicadores y arranque local para Windows.
 
-## Estado del proyecto
+## Estado actual
 
-- Estado actual: prototipo funcional en evolucion.
-- Objetivo inmediato: refactorizar estructura, datos y documentacion.
-- Plan de trabajo actual: ver `PLAN_WAPAPIZZAPARTY_LOCAL.md`.
+- Estado: producto operativo local en evolucion.
+- Enfoque actual: una sola PC, flujo simple, sin pasos manuales innecesarios.
+- Plan vigente: ver [PLAN_WAPAPIZZAPARTY_LOCAL.md](./PLAN_WAPAPIZZAPARTY_LOCAL.md).
 
-## Funcionalidades actuales
+## Lo que ya hace la app
 
-- Visualizacion del menu de pizzas.
-- Carrito de compra con actualizacion de cantidades.
-- Confirmacion de venta desde frontend.
-- Persistencia basica de pizzas y ventas en archivos JSON.
-- Historial de ventas por fecha.
-- Paginas institucionales del negocio.
+- Mostrador para carga rapida de pedidos.
+- Soporte para medias pizzas y pizzas completas.
+- Stock automatico al registrar ventas.
+- Comanda de cocina con impresion automatica.
+- Reimpresion de comandas desde tesoreria.
+- Aviso al cliente por WhatsApp prearmado o por vipper.
+- Flujo simple de pedido:
+  `en_preparacion`, `entregado`, `cancelado`.
+- Tesoreria con:
+  ventas,
+  pizzas vendidas,
+  ticket promedio,
+  medios de pago,
+  ranking de productos,
+  resumen diario,
+  graficas por rango de fechas.
+- Editor interno de catalogo para crear y editar pizzas sin tocar JSON a mano.
+- Acceso rapido de puesto local.
+- Inicio local para Windows y creacion de acceso directo de escritorio.
+- Logs locales de errores y warnings del puesto.
 
-## Stack actual
+## Stack
 
-- Frontend: React, Vite, React Router, Tailwind, CSS Modules, Framer Motion, SweetAlert2.
+- Frontend: React, Vite, React Router, Tailwind, SweetAlert2.
 - Backend: FastAPI.
 - Persistencia actual: archivos JSON.
 
-## Estructura general
+## Estructura
 
 ```text
 Project_1/
 |- backend/
 |  |- app/
 |  |  |- main.py
+|  |  |- notifications.py
 |  |  |- pizzas.json
 |  |  |- ventas.json
+|  |  |- users.json
 |- frontend/
+|  |- public/
 |  |- src/
 |  |  |- components/
 |  |  |- pages/
 |  |  |- store/
+|  |  |- utils/
+|- scripts/
+|  |- start-dev.ps1
+|  |- start-local-app.ps1
+|  |- create-desktop-shortcut.ps1
 |- PLAN_WAPAPIZZAPARTY_LOCAL.md
 |- README.md
 ```
 
-## Como correr el proyecto
+## Formas de uso
 
-### Backend
+### Desarrollo
 
-Desde la carpeta raiz:
+Backend:
 
-```bash
+```powershell
 cd backend
 ..\venv\Scripts\uvicorn app.main:app --reload
 ```
 
-El backend queda disponible en `http://127.0.0.1:8000`.
+Frontend:
 
-### Frontend
-
-Desde la carpeta `frontend`:
-
-```bash
+```powershell
+cd frontend
 npm install
 npm run dev
 ```
 
-El frontend queda disponible en `http://localhost:5173`.
+### Inicio rapido en Windows
 
-### Variables de entorno del backend
+Para levantar backend y frontend por separado en desarrollo:
 
-Puedes crear `backend/.env` tomando como base `backend/.env.example`.
+```powershell
+.\scripts\start-dev.ps1
+```
 
-Configuracion recomendada:
+### Modo local del puesto
+
+Para usar la app como sistema local del negocio:
+
+```powershell
+.\scripts\start-local-app.ps1
+```
+
+O:
+
+```bat
+.\scripts\start-local-app.cmd
+```
+
+Eso:
+
+- compila el frontend si hace falta,
+- levanta FastAPI en `http://127.0.0.1:8000`,
+- y abre la aplicacion local lista para operar.
+
+### Acceso directo
+
+Para crear el acceso directo de escritorio:
+
+```powershell
+.\scripts\create-desktop-shortcut.ps1
+```
+
+O:
+
+```bat
+.\scripts\create-desktop-shortcut.cmd
+```
+
+## Variables de entorno
+
+Crea `backend/.env` tomando como base `backend/.env.example`.
+
+Configuracion recomendada para la PC del negocio:
 
 ```env
 WAPA_AUTH_SECRET=una-clave-segura
@@ -82,7 +141,16 @@ WHATSAPP_MODE=mock
 WHATSAPP_PROVIDER=mock
 ```
 
-Para habilitar envio real con Twilio WhatsApp:
+Claves importantes:
+
+- `WAPA_LOCAL_ACCESS_ENABLED=true`
+  habilita el boton `Ingresar al puesto`
+- `WAPA_SHOW_MANUAL_LOGIN=false`
+  oculta el login manual para simplificar la operatoria
+- `WHATSAPP_MODE=mock`
+  deja preparado el mensaje sin envio real
+
+Para envio real con Twilio:
 
 ```env
 WHATSAPP_MODE=live
@@ -96,111 +164,62 @@ WAPA_INSTAGRAM=https://www.instagram.com/wapapizzaparty
 WAPA_FACEBOOK=https://www.facebook.com/SoleMoranWapaPizzaParty
 ```
 
-En modo `mock`, la aplicacion prepara y registra el mensaje sin enviarlo.
-En modo `live`, el backend intenta enviarlo por la API oficial de Twilio.
-Con `WAPA_LOCAL_ACCESS_ENABLED=true`, la pantalla de login muestra un boton de acceso rapido para la PC interna del negocio.
-Con `WAPA_SHOW_MANUAL_LOGIN=false`, se oculta el formulario manual para simplificar el uso diario del puesto.
+## Logs locales
 
-### Inicio rapido en Windows
-
-Desde la raiz del proyecto podes levantar ambos servicios con:
-
-```powershell
-.\scripts\start-dev.ps1
-```
-
-Eso abre dos ventanas nuevas de PowerShell:
-
-- una para FastAPI,
-- y otra para Vite.
-
-Si solo queres ver los comandos sin abrir ventanas:
-
-```powershell
-.\scripts\start-dev.ps1 -SameWindow
-```
-
-### Modo local para una sola PC
-
-Si quieres usar la aplicacion como puesto local y abrirla desde el navegador sin levantar Vite:
-
-```powershell
-.\scripts\start-local-app.ps1
-```
-
-O bien:
-
-```bat
-.\scripts\start-local-app.cmd
-```
-
-Ese flujo:
-
-- compila el frontend si todavia no existe `frontend/dist`,
-- levanta FastAPI en `http://127.0.0.1:8000`,
-- y abre la app lista para operar desde una sola PC.
-
-Si quieres forzar una recompilacion del frontend:
-
-```powershell
-.\scripts\start-local-app.ps1 -BuildFrontend
-```
-
-### Acceso directo en el escritorio
-
-Para crear un acceso directo de Windows con el icono de WapaPizzaParty:
-
-```powershell
-.\scripts\create-desktop-shortcut.ps1
-```
-
-O bien:
-
-```bat
-.\scripts\create-desktop-shortcut.cmd
-```
-
-Eso genera `WapaPizzaParty.lnk` en el escritorio, apuntando al lanzador local de la aplicacion.
-
-## Logs locales del puesto
-
-El backend escribe logs rotativos en:
+La app guarda logs rotativos en:
 
 ```text
 backend/app/logs/wapapizzaparty.log
 ```
 
-Ahi quedan registrados:
+Ahi quedan:
 
 - errores y warnings del backend,
 - accesos al puesto,
 - pedidos registrados y cambios de estado,
-- y tambien errores o warnings relevantes del frontend.
+- y errores o warnings relevantes del frontend.
 
-## Flujo actual de datos
+Ademas, al arrancar el backend se ejecuta un chequeo automatico de configuracion del puesto.
 
-- El frontend consulta pizzas en `GET /pizzas`.
-- El frontend registra ventas en `POST /ventas/`.
-- El historial usa `GET /ventas/{fecha}`.
-- Los datos se leen y escriben en `backend/app/pizzas.json` y `backend/app/ventas.json`.
-- Si el pedido tiene aviso por WhatsApp, el backend genera el mensaje segun el estado y lo envia o simula segun la configuracion.
+## Catalogo y stock
 
-## Problemas conocidos
+Hoy el catalogo base y el stock viven en:
 
-- El repositorio todavia necesita limpieza de archivos no versionables y estructura Git.
-- El frontend contiene archivos heredados de una plantilla.
-- La persistencia en JSON sirve para prototipo, pero no es la solucion final.
-- Falta validacion formal de datos en varias partes del flujo.
-- Para produccion en WhatsApp hacen falta credenciales reales, sender aprobado y templates aprobados segun las reglas del proveedor.
+- [backend/app/pizzas.json](./backend/app/pizzas.json)
 
-## Siguiente etapa
+Pero la edicion diaria ya puede hacerse desde la app en la vista `Catalogo`.
 
-Las proximas mejoras estan orientadas a:
+Recomendacion actual:
 
-- limpiar el repositorio,
-- mejorar documentacion,
-- estandarizar contratos entre frontend y backend,
-- y separar mejor la logica del negocio.
+- versionar el comportamiento y la estructura del sistema,
+- pero no usar Git como historial del stock diario del local.
+
+## Flujo operativo actual
+
+1. Se carga el pedido desde el mostrador.
+2. La venta descuenta stock automaticamente.
+3. La comanda se imprime automaticamente.
+4. El pedido entra en `en_preparacion`.
+5. Luego se cierra como `entregado` o `cancelado`.
+6. Tesoreria consolida ventas, cantidades y metricas.
+
+## Situacion actual y siguientes pasos
+
+La app ya tiene una base comercial solida para un local con una sola PC.
+
+Los siguientes pasos mas naturales son:
+
+- mejorar la salida comercial de tesoreria con PDF y reportes mas presentables,
+- terminar de definir si hace falta instalador o si alcanza con launcher local,
+- y seguir refinando catalogo, reportes y experiencia del puesto.
+
+## Operacion recomendada del dia a dia
+
+- Ingresar con el boton `Ingresar al puesto`.
+- Tomar el pedido desde mostrador y registrarlo.
+- Dejar que la comanda se imprima automaticamente para cocina.
+- Cerrar cada pedido solo como `entregado` o `cancelado`.
+- Consultar tesoreria para revisar ventas, cantidades y tendencias del negocio.
 
 ## Autor
 
