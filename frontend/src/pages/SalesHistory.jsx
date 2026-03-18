@@ -102,6 +102,42 @@ const SalesHistory = () => {
         });
     };
 
+    const handleResetSales = async () => {
+        const confirmation = await Swal.fire({
+            icon: 'warning',
+            title: 'Borrar tesoreria',
+            text: 'Esto elimina todo el historial de ventas y pedidos registrados.',
+            input: 'text',
+            inputLabel: 'Escribe BORRAR TESORERIA para confirmar',
+            inputPlaceholder: 'BORRAR TESORERIA',
+            showCancelButton: true,
+            confirmButtonText: 'Borrar historial',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (value) => {
+                if ((value || '').trim().toUpperCase() !== 'BORRAR TESORERIA') {
+                    Swal.showValidationMessage('La confirmacion no coincide.');
+                }
+                return value;
+            },
+        });
+
+        if (!confirmation.isConfirmed) {
+            return;
+        }
+
+        const result = await actions.resetSalesData(confirmation.value);
+        if (!result.success) {
+            return;
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Tesoreria reiniciada',
+            text: 'Se borraron las ventas y pedidos registrados.',
+            confirmButtonText: 'Continuar',
+        });
+    };
+
     return (
         <div className="space-y-8">
             <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
@@ -149,6 +185,13 @@ const SalesHistory = () => {
                             className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
                         >
                             Exportar PDF
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleResetSales}
+                            className="rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-700 hover:border-red-400 hover:bg-red-50"
+                        >
+                            Borrar tesoreria
                         </button>
                     </div>
                 </div>

@@ -96,6 +96,43 @@ const CatalogEditor = () => {
         });
     };
 
+    const handleResetStock = async () => {
+        const confirmation = await Swal.fire({
+            icon: 'warning',
+            title: 'Reiniciar stock',
+            text: 'Esto pondra en cero el stock de todas las pizzas y las dejara no disponibles.',
+            input: 'text',
+            inputLabel: 'Escribe REINICIAR STOCK para confirmar',
+            inputPlaceholder: 'REINICIAR STOCK',
+            showCancelButton: true,
+            confirmButtonText: 'Reiniciar stock',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (value) => {
+                if ((value || '').trim().toUpperCase() !== 'REINICIAR STOCK') {
+                    Swal.showValidationMessage('La confirmacion no coincide.');
+                }
+                return value;
+            },
+        });
+
+        if (!confirmation.isConfirmed) {
+            return;
+        }
+
+        const result = await actions.resetCatalogStock(confirmation.value);
+        if (!result.success) {
+            return;
+        }
+
+        handleNewPizza();
+        await Swal.fire({
+            icon: 'success',
+            title: 'Stock reiniciado',
+            text: 'Todas las pizzas quedaron con stock en cero.',
+            confirmButtonText: 'Continuar',
+        });
+    };
+
     return (
         <div className="space-y-8">
             <section className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
@@ -267,6 +304,20 @@ const CatalogEditor = () => {
                             </button>
                         </div>
                     </form>
+
+                    <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-4">
+                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-700">Accion sensible</p>
+                        <p className="mt-2 text-sm text-red-700">
+                            Si quieres arrancar el dia desde cero, puedes reiniciar el stock de todo el catalogo.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleResetStock}
+                            className="mt-4 w-full rounded-2xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-700 hover:border-red-500 hover:bg-red-50"
+                        >
+                            Reiniciar stock a cero
+                        </button>
+                    </div>
                 </aside>
             </section>
         </div>

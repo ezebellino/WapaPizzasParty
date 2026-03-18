@@ -13,3 +13,9 @@ export const updatePizza = (pizzaId, payload) =>
         method: 'PATCH',
         body: JSON.stringify(payload),
     });
+
+export const resetPizzaStock = (confirmText) =>
+    apiRequest('/maintenance/reset-stock', {
+        method: 'POST',
+        body: JSON.stringify({ confirm_text: confirmText }),
+    });

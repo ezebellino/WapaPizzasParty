@@ -1,6 +1,6 @@
 import { localAccessRequest, meRequest, loginRequest } from '../api/auth';
-import { createPizza, fetchPizzas, updatePizza } from '../api/pizzas';
-import { createSale, fetchOrderWhatsAppLink, fetchSales, updateOrderStatus } from '../api/sales';
+import { createPizza, fetchPizzas, resetPizzaStock, updatePizza } from '../api/pizzas';
+import { createSale, fetchOrderWhatsAppLink, fetchSales, resetSalesHistory, updateOrderStatus } from '../api/sales';
 import { HALF_PIZZA_STEP } from '../utils/sales';
 
 const emptySession = {
@@ -380,6 +380,47 @@ const getFlux = (setStore, getStore, storageKey) => ({
             setStore((prevStore) => ({
                 ...prevStore,
                 appError: error.message || 'No pudimos guardar la pizza.',
+            }));
+            return { success: false };
+        }
+    },
+
+    resetSalesData: async (confirmText) => {
+        try {
+            await resetSalesHistory(confirmText);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                sales: [],
+                lastCreatedOrder: null,
+            }));
+            return { success: true };
+        } catch (error) {
+            console.error('Error al reiniciar tesoreria:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos reiniciar la tesoreria.',
+            }));
+            return { success: false };
+        }
+    },
+
+    resetCatalogStock: async (confirmText) => {
+        try {
+            const response = await resetPizzaStock(confirmText);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: null,
+                pizzas: response.pizzas,
+                cart: syncCartWithPizzas(prevStore.cart, response.pizzas),
+                lastCreatedOrder: prevStore.lastCreatedOrder,
+            }));
+            return { success: true };
+        } catch (error) {
+            console.error('Error al reiniciar stock:', error);
+            setStore((prevStore) => ({
+                ...prevStore,
+                appError: error.message || 'No pudimos reiniciar el stock.',
             }));
             return { success: false };
         }

@@ -30,6 +30,7 @@ Hoy la app ya esta orientada a la operatoria real del local: toma de pedidos rap
   graficas por rango de fechas,
   y reporte comercial imprimible en PDF.
 - Editor interno de catalogo para crear y editar pizzas sin tocar JSON a mano.
+- Acciones sensibles para reiniciar tesoreria o stock con confirmacion explicita.
 - Acceso rapido de puesto local.
 - Inicio local para Windows y creacion de acceso directo de escritorio.
 - Logs locales de errores y warnings del puesto.
@@ -219,6 +220,12 @@ Recomendacion actual:
 
 - versionar el comportamiento y la estructura del sistema,
 - pero no usar Git como historial del stock diario del local.
+
+### Reinicios rapidos desde la app
+
+- En `Tesoreria` existe `Borrar tesoreria` para eliminar el historial de ventas y pedidos.
+- En `Catalogo` existe `Reiniciar stock a cero` para dejar todas las pizzas sin stock.
+- Ambas acciones piden confirmacion escrita para evitar errores.
 
 ## Flujo operativo actual
 

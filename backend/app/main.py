@@ -17,6 +17,7 @@ from .schemas import (
     AuthSession,
     ClientLogEntry,
     LoginRequest,
+    MaintenanceAction,
     Order,
     OrderCreate,
     OrderStatusUpdate,
@@ -367,6 +368,18 @@ def save_pizzas(pizzas: list[Pizza]) -> None:
         json.dump([pizza.model_dump() for pizza in pizzas], file, indent=4, ensure_ascii=False)
 
 
+def reset_pizzas_stock(pizzas: list[Pizza]) -> list[Pizza]:
+    return [
+        pizza.model_copy(
+            update={
+                'stock': 0,
+                'available': False,
+            }
+        )
+        for pizza in pizzas
+    ]
+
+
 def reduce_stock_for_order(pizzas: list[Pizza], items: list[SaleItem]) -> list[Pizza]:
     updated_pizzas = pizzas[:]
 
@@ -620,6 +633,40 @@ async def diagnostics_client_log(entry: ClientLogEntry, request: Request):
     host = request.client.host if request.client else ''
     write_log(entry.level, entry.message, source=entry.source, path=entry.path, details=entry.details, host=host)
     return None
+
+
+@app.post('/maintenance/reset-sales')
+async def reset_sales_history(
+    payload: MaintenanceAction,
+    _: SessionUser = Depends(require_role('admin', 'operator')),
+):
+    if payload.confirm_text.strip().upper() != 'BORRAR TESORERIA':
+        raise HTTPException(status_code=400, detail='La confirmacion no coincide para borrar tesoreria.')
+
+    guardar_ventas([])
+    write_log('warning', 'Tesoreria reiniciada manualmente')
+    return {
+        'message': 'La tesoreria quedo reiniciada.',
+        'sales': [],
+    }
+
+
+@app.post('/maintenance/reset-stock')
+async def reset_catalog_stock(
+    payload: MaintenanceAction,
+    _: SessionUser = Depends(require_role('admin', 'operator')),
+):
+    if payload.confirm_text.strip().upper() != 'REINICIAR STOCK':
+        raise HTTPException(status_code=400, detail='La confirmacion no coincide para reiniciar stock.')
+
+    pizzas = load_pizzas()
+    updated_pizzas = reset_pizzas_stock(pizzas)
+    save_pizzas(updated_pizzas)
+    write_log('warning', 'Stock del catalogo reiniciado manualmente', pizzas=len(updated_pizzas))
+    return {
+        'message': 'El stock del catalogo quedo reiniciado en cero.',
+        'pizzas': [pizza.model_dump() for pizza in updated_pizzas],
+    }
 
 
 @app.get('/{full_path:path}', include_in_schema=False)

@@ -18,3 +18,9 @@ export const updateOrderStatus = (date, orderId, status) =>
 
 export const fetchOrderWhatsAppLink = (date, orderId) =>
     apiRequest(`/ventas/${date}/${orderId}/whatsapp-link`);
+
+export const resetSalesHistory = (confirmText) =>
+    apiRequest('/maintenance/reset-sales', {
+        method: 'POST',
+        body: JSON.stringify({ confirm_text: confirmText }),
+    });

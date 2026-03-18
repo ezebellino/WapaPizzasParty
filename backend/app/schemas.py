@@ -83,6 +83,10 @@ class ClientLogEntry(BaseModel):
         return normalized_level
 
 
+class MaintenanceAction(BaseModel):
+    confirm_text: str = Field(min_length=1)
+
+
 class Pizza(BaseModel):
     id: int
     name: str = Field(min_length=1)
