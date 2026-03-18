@@ -118,6 +118,56 @@ export const buildDailyPerformance = (salesDays) =>
             orders: day.order_count,
         }));
 
+const getWeekStart = (dateString) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const dayOfWeek = (date.getDay() + 6) % 7;
+    date.setDate(date.getDate() - dayOfWeek);
+    return date.toISOString().slice(0, 10);
+};
+
+export const buildWeeklyPerformance = (salesDays) => {
+    const weeklyMap = new Map();
+
+    buildDailyPerformance(salesDays).forEach((day) => {
+        const weekStart = getWeekStart(day.date);
+        const current = weeklyMap.get(weekStart) ?? {
+            period: weekStart,
+            revenue: 0,
+            pizzas: 0,
+            orders: 0,
+        };
+
+        current.revenue += day.revenue;
+        current.pizzas = normalizeHalfStep(current.pizzas + day.pizzas);
+        current.orders += day.orders;
+        weeklyMap.set(weekStart, current);
+    });
+
+    return [...weeklyMap.values()].sort((a, b) => a.period.localeCompare(b.period));
+};
+
+export const buildMonthlyPerformance = (salesDays) => {
+    const monthlyMap = new Map();
+
+    buildDailyPerformance(salesDays).forEach((day) => {
+        const month = day.date.slice(0, 7);
+        const current = monthlyMap.get(month) ?? {
+            period: month,
+            revenue: 0,
+            pizzas: 0,
+            orders: 0,
+        };
+
+        current.revenue += day.revenue;
+        current.pizzas = normalizeHalfStep(current.pizzas + day.pizzas);
+        current.orders += day.orders;
+        monthlyMap.set(month, current);
+    });
+
+    return [...monthlyMap.values()].sort((a, b) => a.period.localeCompare(b.period));
+};
+
 export const buildOpenOrders = (salesDays) =>
     flattenOrders(salesDays)
         .filter((order) => order.status === 'en_preparacion')
@@ -261,6 +311,412 @@ export const downloadTreasuryCsv = (salesDays, selectedDate) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+};
+
+const escapeHtml = (value) =>
+    String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const buildPerformanceRowsHtml = (items, type) => {
+    if (items.length === 0) {
+        return `
+            <tr>
+                <td colspan="4" style="padding: 12px 14px; text-align:center; color:#8c6676;">Sin datos para este periodo.</td>
+            </tr>
+        `;
+    }
+
+    return items
+        .map(
+            (item) => `
+                <tr>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(item[type])}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${item.orders}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(formatPizzaQuantity(item.pizzas))}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(formatCurrency(item.revenue))}</td>
+                </tr>
+            `
+        )
+        .join('');
+};
+
+const buildOrderRowsHtml = (orders) => {
+    if (orders.length === 0) {
+        return `
+            <tr>
+                <td colspan="7" style="padding: 12px 14px; text-align:center; color:#8c6676;">No hay pedidos en el rango seleccionado.</td>
+            </tr>
+        `;
+    }
+
+    return orders
+        .map(
+            (order) => `
+                <tr>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.date)}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.order_id)}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.receiver_name)}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.sales.map((item) => formatSaleItemLabel(item)).join(' + '))}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.payment_method.replaceAll('_', ' '))}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(order.status.replaceAll('_', ' '))}</td>
+                    <td style="padding: 12px 14px; border-bottom:1px solid #f3bfd8;">${escapeHtml(formatCurrency(order.total))}</td>
+                </tr>
+            `
+        )
+        .join('');
+};
+
+const buildSimpleListHtml = (items, formatter, emptyLabel) => {
+    if (items.length === 0) {
+        return `<p style="margin:0; color:#8c6676;">${escapeHtml(emptyLabel)}</p>`;
+    }
+
+    return `
+        <div style="display:grid; gap:10px;">
+            ${items.map((item) => formatter(item)).join('')}
+        </div>
+    `;
+};
+
+export const openTreasuryPdfReport = (salesDays, filters = {}) => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const openedWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!openedWindow) {
+        return;
+    }
+
+    const stats = buildTreasuryStats(salesDays);
+    const dailyPerformance = buildDailyPerformance(salesDays);
+    const weeklyPerformance = buildWeeklyPerformance(salesDays);
+    const monthlyPerformance = buildMonthlyPerformance(salesDays);
+    const topProducts = buildTopProducts(salesDays).slice(0, 10);
+    const paymentBreakdown = buildPaymentBreakdown(salesDays);
+    const statusBreakdown = buildStatusBreakdown(salesDays);
+    const orders = [...stats.orders].sort((a, b) => {
+        const dateDiff = new Date(b.created_at) - new Date(a.created_at);
+        if (!Number.isNaN(dateDiff) && dateDiff !== 0) {
+            return dateDiff;
+        }
+
+        return String(b.date).localeCompare(String(a.date));
+    });
+
+    const generatedAt = new Date().toLocaleString('es-AR');
+    const filterLabel =
+        filters.startDate || filters.endDate
+            ? `${filters.startDate || 'inicio'} a ${filters.endDate || 'hoy'}`
+            : 'Todo el historial';
+
+    const reportHtml = `
+        <html>
+            <head>
+                <title>Reporte de tesoreria - WapaPizzaParty</title>
+                <meta charset="UTF-8" />
+                <style>
+                    @page { size: A4 portrait; margin: 16mm; }
+                    body {
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        color: #3e2330;
+                        background: #fffdfd;
+                        margin: 0;
+                    }
+                    .sheet {
+                        display: grid;
+                        gap: 18px;
+                    }
+                    .hero {
+                        border: 2px solid #ffd2e5;
+                        border-radius: 24px;
+                        overflow: hidden;
+                    }
+                    .hero-top {
+                        background: linear-gradient(135deg, #eb0a7c, #b10861);
+                        color: white;
+                        padding: 22px;
+                    }
+                    .hero-top h1 {
+                        margin: 8px 0 6px;
+                        font-size: 34px;
+                    }
+                    .hero-top p {
+                        margin: 0;
+                        opacity: 0.92;
+                    }
+                    .hero-meta {
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 14px;
+                        padding: 18px 22px;
+                        background: #fff5f9;
+                    }
+                    .metrics {
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 12px;
+                    }
+                    .metric {
+                        border: 1px solid #ffd2e5;
+                        border-radius: 18px;
+                        padding: 16px;
+                        background: white;
+                    }
+                    .metric-label {
+                        margin: 0;
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.12em;
+                        color: #8c6676;
+                    }
+                    .metric-value {
+                        margin: 10px 0 0;
+                        font-size: 26px;
+                        font-weight: 700;
+                        color: #3e2330;
+                    }
+                    .section {
+                        border: 1px solid #ffd2e5;
+                        border-radius: 22px;
+                        padding: 18px;
+                        break-inside: avoid;
+                    }
+                    .section h2 {
+                        margin: 0 0 4px;
+                        font-size: 22px;
+                    }
+                    .section p.section-subtitle {
+                        margin: 0 0 14px;
+                        color: #8c6676;
+                        font-size: 13px;
+                    }
+                    .grid-2 {
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 16px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 12px;
+                    }
+                    th {
+                        text-align: left;
+                        padding: 10px 14px;
+                        background: #fff5f9;
+                        color: #8c6676;
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        font-size: 11px;
+                    }
+                    .pill {
+                        display: inline-block;
+                        padding: 5px 10px;
+                        border-radius: 999px;
+                        background: #fff0f7;
+                        color: #b10861;
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
+                    .list-card {
+                        border: 1px solid #f3bfd8;
+                        border-radius: 16px;
+                        padding: 12px 14px;
+                        background: #fffdfd;
+                    }
+                    .list-card strong {
+                        display: block;
+                        margin-bottom: 4px;
+                    }
+                    .footer-note {
+                        text-align: center;
+                        color: #8c6676;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        .print-actions { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="sheet">
+                    <div class="print-actions" style="display:flex; justify-content:flex-end; padding: 12px 0 0;">
+                        <button onclick="window.print()" style="border:none; border-radius:999px; background:#eb0a7c; color:white; font-weight:700; padding:12px 18px; cursor:pointer;">
+                            Guardar / imprimir PDF
+                        </button>
+                    </div>
+
+                    <section class="hero">
+                        <div class="hero-top">
+                            <p style="font-size:12px; letter-spacing:0.26em; text-transform:uppercase;">Reporte comercial</p>
+                            <h1>WapaPizzaParty</h1>
+                            <p>Resumen de ventas, produccion y comportamiento del negocio.</p>
+                        </div>
+                        <div class="hero-meta">
+                            <div>
+                                <p class="metric-label">Rango analizado</p>
+                                <p style="margin:8px 0 0; font-size:20px; font-weight:700;">${escapeHtml(filterLabel)}</p>
+                            </div>
+                            <div>
+                                <p class="metric-label">Generado</p>
+                                <p style="margin:8px 0 0; font-size:20px; font-weight:700;">${escapeHtml(generatedAt)}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="metrics">
+                        <div class="metric">
+                            <p class="metric-label">Ventas registradas</p>
+                            <p class="metric-value">${stats.totalOrders}</p>
+                        </div>
+                        <div class="metric">
+                            <p class="metric-label">Pizzas vendidas</p>
+                            <p class="metric-value">${escapeHtml(formatPizzaQuantity(stats.totalPizzas))}</p>
+                        </div>
+                        <div class="metric">
+                            <p class="metric-label">Facturacion</p>
+                            <p class="metric-value">${escapeHtml(formatCurrency(stats.totalRevenue))}</p>
+                        </div>
+                        <div class="metric">
+                            <p class="metric-label">Ticket promedio</p>
+                            <p class="metric-value">${escapeHtml(formatCurrency(stats.averageTicket))}</p>
+                        </div>
+                    </section>
+
+                    <section class="grid-2">
+                        <div class="section">
+                            <h2>Resumen por estado</h2>
+                            <p class="section-subtitle">Cierre operativo del rango elegido.</p>
+                            ${buildSimpleListHtml(
+                                statusBreakdown,
+                                (item) => `
+                                    <div class="list-card">
+                                        <span class="pill">${escapeHtml(item.label)}</span>
+                                        <strong style="margin-top:10px;">${item.count} pedidos</strong>
+                                    </div>
+                                `,
+                                'Sin movimientos en este rango.'
+                            )}
+                        </div>
+                        <div class="section">
+                            <h2>Medios de pago</h2>
+                            <p class="section-subtitle">Distribucion del ingreso por metodo.</p>
+                            ${buildSimpleListHtml(
+                                paymentBreakdown,
+                                (item) => `
+                                    <div class="list-card">
+                                        <strong>${escapeHtml(item.method.replaceAll('_', ' '))}</strong>
+                                        <div style="display:flex; justify-content:space-between; gap:12px; color:#8c6676;">
+                                            <span>${item.count} pedidos</span>
+                                            <span>${escapeHtml(formatCurrency(item.total))}</span>
+                                        </div>
+                                    </div>
+                                `,
+                                'Sin pagos registrados en este rango.'
+                            )}
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        <h2>Productos mas vendidos</h2>
+                        <p class="section-subtitle">Ranking comercial para detectar favoritos y volumen.</p>
+                        ${buildSimpleListHtml(
+                            topProducts,
+                            (item, index) => `
+                                <div class="list-card">
+                                    <strong>${escapeHtml(item.name)}</strong>
+                                    <div style="display:flex; justify-content:space-between; gap:12px; color:#8c6676;">
+                                        <span>${escapeHtml(formatPizzaQuantity(item.quantity))}</span>
+                                        <span>${escapeHtml(formatCurrency(item.revenue))}</span>
+                                    </div>
+                                </div>
+                            `,
+                            'Todavia no hay datos para ranking.'
+                        )}
+                    </section>
+
+                    <section class="section">
+                        <h2>Resumen por dia</h2>
+                        <p class="section-subtitle">Vista diaria de pedidos, produccion y facturacion.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Pedidos</th>
+                                    <th>Pizzas</th>
+                                    <th>Facturacion</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildPerformanceRowsHtml(dailyPerformance, 'date')}</tbody>
+                        </table>
+                    </section>
+
+                    <section class="grid-2">
+                        <div class="section">
+                            <h2>Resumen semanal</h2>
+                            <p class="section-subtitle">Consolidado por semana para detectar ritmo del negocio.</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Semana</th>
+                                        <th>Pedidos</th>
+                                        <th>Pizzas</th>
+                                        <th>Facturacion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${buildPerformanceRowsHtml(weeklyPerformance, 'period')}</tbody>
+                            </table>
+                        </div>
+                        <div class="section">
+                            <h2>Resumen mensual</h2>
+                            <p class="section-subtitle">Lectura macro del rendimiento comercial.</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Pedidos</th>
+                                        <th>Pizzas</th>
+                                        <th>Facturacion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${buildPerformanceRowsHtml(monthlyPerformance, 'period')}</tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        <h2>Detalle de pedidos</h2>
+                        <p class="section-subtitle">Comprobante comercial del periodo seleccionado.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Detalle</th>
+                                    <th>Pago</th>
+                                    <th>Estado</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildOrderRowsHtml(orders)}</tbody>
+                        </table>
+                    </section>
+
+                    <p class="footer-note">Reporte generado por WapaPizzaParty.</p>
+                </div>
+            </body>
+        </html>
+    `;
+
+    openedWindow.document.write(reportHtml);
+    openedWindow.document.close();
+    openedWindow.focus();
 };
 
 export const printKitchenTicket = (order) => {

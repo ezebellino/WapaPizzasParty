@@ -27,7 +27,8 @@ Hoy la app ya esta orientada a la operatoria real del local: toma de pedidos rap
   medios de pago,
   ranking de productos,
   resumen diario,
-  graficas por rango de fechas.
+  graficas por rango de fechas,
+  y reporte comercial imprimible en PDF.
 - Editor interno de catalogo para crear y editar pizzas sin tocar JSON a mano.
 - Acceso rapido de puesto local.
 - Inicio local para Windows y creacion de acceso directo de escritorio.
@@ -209,9 +210,9 @@ La app ya tiene una base comercial solida para un local con una sola PC.
 
 Los siguientes pasos mas naturales son:
 
-- mejorar la salida comercial de tesoreria con PDF y reportes mas presentables,
 - terminar de definir si hace falta instalador o si alcanza con launcher local,
-- y seguir refinando catalogo, reportes y experiencia del puesto.
+- seguir refinando catalogo, reportes y experiencia del puesto,
+- y evaluar respaldo de datos o migracion futura desde JSON a una persistencia mas robusta.
 
 ## Operacion recomendada del dia a dia
 

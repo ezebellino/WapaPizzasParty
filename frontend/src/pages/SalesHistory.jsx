@@ -3,12 +3,12 @@ import Swal from 'sweetalert2';
 import { AppContext } from '../store/AppContext';
 import {
     buildDailyPerformance,
+    buildMonthlyPerformance,
     buildPaymentBreakdown,
     buildStatusBreakdown,
     buildStockAlerts,
     buildTopProducts,
     buildTreasuryStats,
-    downloadTreasuryCsv,
     formatCurrency,
     formatPizzaQuantity,
     formatSaleItemLabel,
@@ -17,7 +17,9 @@ import {
     getStatusBadgeClass,
     getStockBadgeClass,
     getStockLabel,
+    openTreasuryPdfReport,
     printKitchenTicket,
+    buildWeeklyPerformance,
 } from '../utils/sales';
 
 const SalesHistory = () => {
@@ -40,6 +42,8 @@ const SalesHistory = () => {
 
     const stats = buildTreasuryStats(filteredDays);
     const dailyPerformance = buildDailyPerformance(filteredDays);
+    const weeklyPerformance = buildWeeklyPerformance(filteredDays);
+    const monthlyPerformance = buildMonthlyPerformance(filteredDays);
     const topProducts = buildTopProducts(filteredDays).slice(0, 5);
     const stockAlerts = buildStockAlerts(store.pizzas).slice(0, 6);
     const paymentBreakdown = buildPaymentBreakdown(filteredDays);
@@ -49,7 +53,6 @@ const SalesHistory = () => {
         .slice(0, 8);
 
     const dailyRows = [...filteredDays].sort((a, b) => b.date.localeCompare(a.date));
-    const exportLabel = [startDate || 'inicio', endDate || 'hoy'].join('_a_');
     const maxRevenue = Math.max(...dailyPerformance.map((item) => item.revenue), 1);
     const maxPizzas = Math.max(...dailyPerformance.map((item) => item.pizzas), 1);
 
@@ -139,10 +142,10 @@ const SalesHistory = () => {
                         </button>
                         <button
                             type="button"
-                            onClick={() => downloadTreasuryCsv(filteredDays, exportLabel)}
+                            onClick={() => openTreasuryPdfReport(filteredDays, { startDate, endDate })}
                             className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-secondary"
                         >
-                            Exportar CSV
+                            Exportar PDF
                         </button>
                     </div>
                 </div>
@@ -170,6 +173,14 @@ const SalesHistory = () => {
                         <p className="mt-1 text-sm text-muted">
                             {stats.bestDay ? formatCurrency(stats.bestDay.total_revenue) : 'Aun sin ventas'}
                         </p>
+                    </div>
+                    <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
+                        <p className="text-sm text-muted">Semanas con ventas</p>
+                        <p className="mt-2 text-3xl font-semibold text-text">{weeklyPerformance.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-primary/10 bg-background/60 p-4">
+                        <p className="text-sm text-muted">Meses con ventas</p>
+                        <p className="mt-2 text-3xl font-semibold text-text">{monthlyPerformance.length}</p>
                     </div>
                 </div>
             </section>
@@ -281,6 +292,48 @@ const SalesHistory = () => {
                 </div>
 
                 <div className="space-y-6">
+                    <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <h3 className="text-2xl font-semibold text-text">Consolidado semanal</h3>
+                        <div className="mt-5 space-y-3">
+                            {weeklyPerformance.length > 0 ? (
+                                weeklyPerformance.map((item) => (
+                                    <div key={item.period} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
+                                        <div>
+                                            <p className="font-semibold text-text">Semana de {item.period}</p>
+                                            <p className="text-sm text-muted">
+                                                {item.orders} pedidos · {formatPizzaQuantity(item.pizzas)}
+                                            </p>
+                                        </div>
+                                        <p className="font-semibold text-text">{formatCurrency(item.revenue)}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted">No hay semanas con datos en este filtro.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
+                        <h3 className="text-2xl font-semibold text-text">Consolidado mensual</h3>
+                        <div className="mt-5 space-y-3">
+                            {monthlyPerformance.length > 0 ? (
+                                monthlyPerformance.map((item) => (
+                                    <div key={item.period} className="flex items-center justify-between rounded-2xl bg-background/70 p-4">
+                                        <div>
+                                            <p className="font-semibold text-text">{item.period}</p>
+                                            <p className="text-sm text-muted">
+                                                {item.orders} pedidos · {formatPizzaQuantity(item.pizzas)}
+                                            </p>
+                                        </div>
+                                        <p className="font-semibold text-text">{formatCurrency(item.revenue)}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted">No hay meses con datos en este filtro.</p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="rounded-[28px] border border-primary/10 bg-white/85 p-6 shadow-modern">
                         <h3 className="text-2xl font-semibold text-text">Metodos de pago</h3>
                         <div className="mt-5 space-y-3">
